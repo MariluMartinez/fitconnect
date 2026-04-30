@@ -98,7 +98,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         distanceGoal: distanceGoal,
         activeMinutesGoal: activeMinutesGoal,
       ),
-      const MeetupsScreen(),
+      MeetupsScreen(),
       ProfileScreen(
         stepsGoal: stepsGoal,
         distanceGoal: distanceGoal,
