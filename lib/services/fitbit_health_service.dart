@@ -1,11 +1,20 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'health_service.dart';
 
 class FitbitHealthService implements HealthService {
   static const String clientId = '23VC6K';
   static const String redirectUri = 'fitconnect://callback';
+
+  String get baseUrl {
+    if (Platform.isAndroid) {
+      return 'http://10.0.2.2:3000';
+    } else {
+      return 'http://127.0.0.1:3000';
+    }
+  }
 
   @override
   Future<HealthSnapshot?> connect() async {
@@ -30,9 +39,10 @@ class FitbitHealthService implements HealthService {
     }
 
     final client = HttpClient();
+
     try {
       final request = await client.postUrl(
-        Uri.parse('http://10.0.2.2:3000/exchange-token'),
+        Uri.parse('$baseUrl/exchange-token'),
       );
 
       request.headers.contentType = ContentType.json;
@@ -41,7 +51,7 @@ class FitbitHealthService implements HealthService {
       final response = await request.close();
       final responseBody = await response.transform(utf8.decoder).join();
 
-      print('Backend token response: $responseBody');
+      debugPrint('Backend token response: $responseBody');
 
       if (response.statusCode != 200) {
         throw Exception('Backend token exchange failed: $responseBody');
@@ -64,15 +74,13 @@ class FitbitHealthService implements HealthService {
         orElse: () => {'distance': 0},
       )['distance'];
 
-      print('Real Fitbit steps: $steps');
-      print('Real Fitbit distance: $totalDistance');
-
       if (accessToken == null) {
         throw Exception('No access token returned from backend.');
       }
 
-      print('Fitbit access token received.');
-      print('Refresh token received: ${refreshToken != null}');
+      debugPrint('Real Fitbit steps: $steps');
+      debugPrint('Real Fitbit distance: $totalDistance');
+      debugPrint('Refresh token received: ${refreshToken != null}');
 
       return HealthSnapshot(
         steps: steps,
@@ -91,13 +99,13 @@ class FitbitHealthService implements HealthService {
 
     try {
       final request = await client.getUrl(
-        Uri.parse('http://10.0.2.2:3000/fitbit-data'),
+        Uri.parse('$baseUrl/fitbit-data'),
       );
 
       final response = await request.close();
       final responseBody = await response.transform(utf8.decoder).join();
 
-      print('Fetch data response: $responseBody');
+      debugPrint('Fetch data response: $responseBody');
 
       if (response.statusCode != 200) {
         throw Exception('Failed to fetch Fitbit data: $responseBody');

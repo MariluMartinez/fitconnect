@@ -26,10 +26,7 @@ class DefaultFirebaseOptions {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for ios - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return ios;
       case TargetPlatform.macOS:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for macos - '
@@ -58,6 +55,17 @@ class DefaultFirebaseOptions {
     messagingSenderId: '752567322079',
     projectId: 'fitconnect-2ba3f',
     storageBucket: 'fitconnect-2ba3f.firebasestorage.app',
+  );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyBxMxI3-RFG2YZu_7mS_i7q_WktxdGm8pE',
+    appId: '1:752567322079:ios:bdbc8f9baf4a4b6ad2706a',
+    messagingSenderId: '752567322079',
+    projectId: 'fitconnect-2ba3f',
+    storageBucket: 'fitconnect-2ba3f.firebasestorage.app',
+    androidClientId: '752567322079-ifipsc0ra784pgcqk5kgohbpred2pepk.apps.googleusercontent.com',
+    iosClientId: '752567322079-ea5787am04bvg5h9viujltha92i8mv0c.apps.googleusercontent.com',
+    iosBundleId: 'com.example.fitconnect',
   );
 
 }
