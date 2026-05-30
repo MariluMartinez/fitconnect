@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'health_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class FitbitHealthService implements HealthService {
   static const String clientId = '23VC6K';
@@ -38,6 +39,15 @@ class FitbitHealthService implements HealthService {
       throw Exception('No authorization code returned from Fitbit.');
     }
 
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      throw Exception('User not logged in.');
+    }
+
+    final uid = user.uid;
+    debugPrint('Current UID: $uid');
+
     final client = HttpClient();
 
     try {
@@ -46,7 +56,7 @@ class FitbitHealthService implements HealthService {
       );
 
       request.headers.contentType = ContentType.json;
-      request.write(jsonEncode({'code': code}));
+      request.write(jsonEncode({'code': code, 'uid': uid}));
 
       final response = await request.close();
       final responseBody = await response.transform(utf8.decoder).join();
@@ -98,9 +108,7 @@ class FitbitHealthService implements HealthService {
     final client = HttpClient();
 
     try {
-      final request = await client.getUrl(
-        Uri.parse('$baseUrl/fitbit-data'),
-      );
+      final request = await client.getUrl(Uri.parse('$baseUrl/fitbit-data'));
 
       final response = await request.close();
       final responseBody = await response.transform(utf8.decoder).join();
