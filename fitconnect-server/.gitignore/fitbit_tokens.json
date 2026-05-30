@@ -1,8 +1,0 @@
-{
-  "access_token": "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIyM1ZDNksiLCJzdWIiOiI5SEtTQloiLCJpc3MiOiJGaXRiaXQiLCJ0eXAiOiJhY2Nlc3NfdG9rZW4iLCJzY29wZXMiOiJyYWN0IHJwcm8iLCJleHAiOjE3Nzc1NDk2NDMsImlhdCI6MTc3NzUyMDg0M30.84yjEkcbAc2uLdqypOaR4ZPZuphufW8hLxS8wsQHs10",
-  "expires_in": 28800,
-  "refresh_token": "21d59abf047500810452b383fc95df3275f63c02d0cb43a9c0f7fb8aa5a0128d",
-  "scope": "profile activity",
-  "token_type": "Bearer",
-  "user_id": "9HKSBZ"
-}
