@@ -8,18 +8,15 @@ const app = express();
 const PORT = 3000;
 let fitbitTokens = null;
 
-const TOKEN_FILE = "fitbit_tokens.json";
-
-if (fs.existsSync(TOKEN_FILE)) {
-  fitbitTokens = JSON.parse(fs.readFileSync(TOKEN_FILE, "utf8"));
-  console.log("Loaded saved Fitbit tokens.");
-}
-
 app.use(cors());
 app.use(express.json());
 
 app.post("/exchange-token", async (req, res) => {
-  const { code } = req.body;
+  const { code, uid } = req.body;
+
+  if (!uid) {
+    return res.status(400).json({ error: "Missing Firebase UID" });
+  }
 
   if (!code) {
     return res.status(400).json({ error: "Missing authorization code" });
@@ -61,7 +58,8 @@ app.post("/exchange-token", async (req, res) => {
 
     fitbitTokens = tokenResponse.data;
 
-    fs.writeFileSync(TOKEN_FILE, JSON.stringify(fitbitTokens, null, 2));
+    const tokenFile = `fitbit_tokens_${uid}.json`;
+    fs.writeFileSync(tokenFile, JSON.stringify(fitbitTokens, null, 2));
     console.log("Saved Fitbit tokens.");
 
     res.json({
