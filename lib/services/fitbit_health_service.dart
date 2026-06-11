@@ -107,8 +107,16 @@ class FitbitHealthService implements HealthService {
   Future<HealthSnapshot?> fetchTodayData() async {
     final client = HttpClient();
 
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      throw Exception('User not logged in.');
+    }
+
+    final uid = user.uid;
+
     try {
-      final request = await client.getUrl(Uri.parse('$baseUrl/fitbit-data'));
+      final request = await client.getUrl(Uri.parse('$baseUrl/fitbit-data?uid=$uid'));
 
       final response = await request.close();
       final responseBody = await response.transform(utf8.decoder).join();

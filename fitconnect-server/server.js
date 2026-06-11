@@ -80,11 +80,23 @@ app.post("/exchange-token", async (req, res) => {
 });
 
 app.get("/fitbit-data", async (req, res) => {
-  if (!fitbitTokens?.access_token) {
+  const { uid } = req.query;
+
+  if (!uid) {
+    return res.status(400).json({
+      error: "Missing Firebase UID",
+    });
+  }
+
+  const tokenFile = `fitbit_tokens_${uid}.json`;
+
+  if (!fs.existsSync(tokenFile)) {
     return res.status(401).json({
       error: "Fitbit is not connected yet",
     });
   }
+
+  const userTokens = JSON.parse(fs.readFileSync(tokenFile, "utf8"));
 
   try {
     const today = new Intl.DateTimeFormat("en-CA", {
@@ -100,7 +112,7 @@ app.get("/fitbit-data", async (req, res) => {
       `https://api.fitbit.com/1/user/-/activities/date/${today}.json`,
       {
         headers: {
-          Authorization: `Bearer ${fitbitTokens.access_token}`,
+          Authorization: `Bearer ${userTokens.access_token}`,
         },
       }
     );
