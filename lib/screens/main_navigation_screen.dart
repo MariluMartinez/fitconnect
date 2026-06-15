@@ -6,6 +6,7 @@ import 'profile_screen.dart';
 import '../services/health_service.dart';
 import '../services/fitbit_health_service.dart';
 import '../services/firestore_service.dart';
+import 'friends_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -99,6 +100,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         activeMinutesGoal: activeMinutesGoal,
       ),
       MeetupsScreen(),
+      const FriendsScreen(),
       ProfileScreen(
         stepsGoal: stepsGoal,
         distanceGoal: distanceGoal,
@@ -141,6 +143,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.groups_outlined),
             label: 'Meetups',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people_outline),
+            label: 'Friends',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
