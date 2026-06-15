@@ -55,4 +55,120 @@ class FirestoreService {
       'sleepGoal': sleepGoal,
     });
   }
+
+  Future<List<Map<String, dynamic>>> searchUsersByEmail(String email) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) return [];
+
+    final query = await _db
+        .collection('users')
+        .where('email', isEqualTo: email.trim())
+        .get();
+
+    return query.docs
+        .where((doc) => doc.id != currentUser.uid)
+        .map((doc) => {'uid': doc.id, ...doc.data()})
+        .toList();
+  }
+
+  Future<void> sendFriendRequest(String receiverUid) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) return;
+
+    final requestId = '${currentUser.uid}_$receiverUid';
+
+    await _db.collection('friendRequests').doc(requestId).set({
+      'fromUid': currentUser.uid,
+      'toUid': receiverUid,
+      'status': 'pending',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getIncomingFriendRequests() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) return [];
+
+    final query = await _db
+        .collection('friendRequests')
+        .where('toUid', isEqualTo: currentUser.uid)
+        .where('status', isEqualTo: 'pending')
+        .get();
+
+    final requests = <Map<String, dynamic>>[];
+
+    for (final doc in query.docs) {
+      final data = doc.data();
+      final fromUid = data['fromUid'];
+
+      final userDoc = await _db.collection('users').doc(fromUid).get();
+      final userData = userDoc.data();
+
+      requests.add({'requestId': doc.id, ...data, 'fromUser': userData});
+    }
+
+    return requests;
+  }
+
+  Future<void> acceptFriendRequest({
+    required String requestId,
+    required String fromUid,
+  }) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) return;
+
+    final currentUid = currentUser.uid;
+
+    final batch = _db.batch();
+
+    final currentUserRef = _db.collection('users').doc(currentUid);
+    final friendUserRef = _db.collection('users').doc(fromUid);
+    final requestRef = _db.collection('friendRequests').doc(requestId);
+
+    batch.update(currentUserRef, {
+      'friends': FieldValue.arrayUnion([fromUid]),
+    });
+
+    batch.update(friendUserRef, {
+      'friends': FieldValue.arrayUnion([currentUid]),
+    });
+
+    batch.update(requestRef, {'status': 'accepted'});
+
+    await batch.commit();
+  }
+
+  Future<List<Map<String, dynamic>>> getCurrentUserFriends() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) return [];
+
+    final currentUserDoc = await _db
+        .collection('users')
+        .doc(currentUser.uid)
+        .get();
+
+    final data = currentUserDoc.data();
+
+    if (data == null) return [];
+
+    final friendIds = List<String>.from(data['friends'] ?? []);
+
+    final friends = <Map<String, dynamic>>[];
+
+    for (final friendId in friendIds) {
+      final friendDoc = await _db.collection('users').doc(friendId).get();
+      final friendData = friendDoc.data();
+
+      if (friendData != null) {
+        friends.add({'uid': friendDoc.id, ...friendData});
+      }
+    }
+
+    return friends;
+  }
 }
