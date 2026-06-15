@@ -1,3 +1,4 @@
 node_modules/
 .env
 fitbit_tokens.json
+fitbit_tokens_*.json
