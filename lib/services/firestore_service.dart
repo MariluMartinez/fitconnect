@@ -171,4 +171,19 @@ class FirestoreService {
 
     return friends;
   }
+
+  Future<void> updateTodayActivity({
+    required int steps,
+    required double distanceMiles,
+  }) async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) return;
+
+    await _db.collection('users').doc(user.uid).update({
+      'todaySteps': steps,
+      'todayDistanceMiles': distanceMiles,
+      'activityLastSync': FieldValue.serverTimestamp(),
+    });
+  }
 }

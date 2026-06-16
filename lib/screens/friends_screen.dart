@@ -59,7 +59,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
   Future<void> _showAddFriendDialog() async {
     await _loadFriends();
-    
+
     final emailController = TextEditingController();
     List<Map<String, dynamic>> results = [];
     bool isSearching = false;
@@ -228,11 +228,13 @@ class _FriendsScreenState extends State<FriendsScreen> {
               )
             else
               ..._friends.map((friend) {
+                final steps = friend['todaySteps'] ?? 0;
+
                 return Card(
                   child: ListTile(
                     leading: const CircleAvatar(child: Icon(Icons.person)),
                     title: Text(friend['publicName'] ?? 'User'),
-                    subtitle: Text(friend['email'] ?? ''),
+                    subtitle: Text('$steps steps today'),
                   ),
                 );
               }),

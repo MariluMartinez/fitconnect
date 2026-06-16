@@ -41,6 +41,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           : await fitbitHealthService.connect();
 
       if (snapshot != null && mounted) {
+        await firestoreService.updateTodayActivity(
+          steps: snapshot.steps,
+          distanceMiles: snapshot.distanceMiles,
+        );
+
         setState(() {
           _snapshot = snapshot;
           _isConnected = true;
