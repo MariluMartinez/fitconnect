@@ -13,12 +13,14 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
   List<Map<String, dynamic>> _friends = [];
   List<Map<String, dynamic>> _incomingRequests = [];
+  List<Map<String, dynamic>> _leaderboard = [];
 
   @override
   void initState() {
     super.initState();
     _loadFriends();
     _loadIncomingRequests();
+    _loadLeaderboard();
   }
 
   Future<void> _loadFriends() async {
@@ -28,6 +30,16 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
     setState(() {
       _friends = friends;
+    });
+  }
+
+  Future<void> _loadLeaderboard() async {
+    final leaderboard = await firestoreService.getFriendsLeaderboard();
+
+    if (!mounted) return;
+
+    setState(() {
+      _leaderboard = leaderboard;
     });
   }
 
@@ -182,6 +194,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
         onRefresh: () async {
           await _loadFriends();
           await _loadIncomingRequests();
+          await _loadLeaderboard();
         },
         child: ListView(
           padding: const EdgeInsets.all(16),
@@ -214,33 +227,97 @@ class _FriendsScreenState extends State<FriendsScreen> {
               }),
               const SizedBox(height: 24),
             ],
-            const Text(
-              'My Friends',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            if (_friends.isEmpty)
-              const Padding(
-                padding: EdgeInsets.only(top: 80),
-                child: Center(
-                  child: Text('No friends yet. Tap + to add someone.'),
-                ),
-              )
-            else
-              ..._friends.map((friend) {
-                final steps = friend['todaySteps'] ?? 0;
+            if (_leaderboard.isNotEmpty) ...[
+              const Text(
+                'Friends',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              ..._leaderboard.asMap().entries.map((entry) {
+                final index = entry.key;
+                final user = entry.value;
+                final steps = user['todaySteps'] ?? 0;
+                final goal = user['stepsGoal'] ?? 8000;
+                final isCurrentUser = user['isCurrentUser'] == true;
+
+                final rankIcon = index == 0
+                    ? '🥇'
+                    : index == 1
+                    ? '🥈'
+                    : index == 2
+                    ? '🥉'
+                    : '${index + 1}';
 
                 return Card(
                   child: ListTile(
-                    leading: const CircleAvatar(child: Icon(Icons.person)),
-                    title: Text(friend['publicName'] ?? 'User'),
-                    subtitle: Text('$steps steps today'),
+                    leading: CircleAvatar(child: Text(rankIcon)),
+                    title: Text(
+                      isCurrentUser
+                          ? '${user['publicName'] ?? 'You'} (You)'
+                          : user['publicName'] ?? 'User',
+                    ),
+                    subtitle: Text('$steps / $goal steps'),
+                    trailing: isCurrentUser
+                        ? null
+                        : PopupMenuButton<String>(
+                            onSelected: (value) {
+                              if (value == 'remove') {
+                                _removeFriend(
+                                  user['uid'],
+                                  user['publicName'] ?? 'User',
+                                );
+                              }
+                            },
+                            itemBuilder: (context) => const [
+                              PopupMenuItem(
+                                value: 'remove',
+                                child: Text('Remove Friend'),
+                              ),
+                            ],
+                          ),
                   ),
                 );
               }),
+              const SizedBox(height: 24),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _removeFriend(String friendUid, String friendName) async {
+    final shouldRemove = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Remove Friend'),
+          content: Text('Are you sure you want to remove $friendName?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Remove'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldRemove != true) return;
+
+    await firestoreService.removeFriend(friendUid);
+
+    await _loadFriends();
+    await _loadLeaderboard();
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Friend removed')));
   }
 }

@@ -186,4 +186,67 @@ class FirestoreService {
       'activityLastSync': FieldValue.serverTimestamp(),
     });
   }
+
+  Future<List<Map<String, dynamic>>> getFriendsLeaderboard() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) return [];
+
+    final currentUserDoc = await _db
+        .collection('users')
+        .doc(currentUser.uid)
+        .get();
+
+    final currentUserData = currentUserDoc.data();
+
+    if (currentUserData == null) return [];
+
+    final friendIds = List<String>.from(currentUserData['friends'] ?? []);
+
+    final leaderboard = <Map<String, dynamic>>[
+      {'uid': currentUser.uid, ...currentUserData, 'isCurrentUser': true},
+    ];
+
+    for (final friendId in friendIds) {
+      final friendDoc = await _db.collection('users').doc(friendId).get();
+      final friendData = friendDoc.data();
+
+      if (friendData != null) {
+        leaderboard.add({
+          'uid': friendDoc.id,
+          ...friendData,
+          'isCurrentUser': false,
+        });
+      }
+    }
+
+    leaderboard.sort((a, b) {
+      final aSteps = a['todaySteps'] ?? 0;
+      final bSteps = b['todaySteps'] ?? 0;
+      return bSteps.compareTo(aSteps);
+    });
+
+    return leaderboard;
+  }
+
+  Future<void> removeFriend(String friendUid) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) return;
+
+    final batch = _db.batch();
+
+    final currentUserRef = _db.collection('users').doc(currentUser.uid);
+    final friendRef = _db.collection('users').doc(friendUid);
+
+    batch.update(currentUserRef, {
+      'friends': FieldValue.arrayRemove([friendUid]),
+    });
+
+    batch.update(friendRef, {
+      'friends': FieldValue.arrayRemove([currentUser.uid]),
+    });
+
+    await batch.commit();
+  }
 }
