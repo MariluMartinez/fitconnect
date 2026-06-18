@@ -176,6 +176,16 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
+  Widget _buildUserAvatar(Map<String, dynamic> user, String fallbackText) {
+    final photoUrl = user['photoUrl'];
+
+    if (photoUrl != null && photoUrl.toString().isNotEmpty) {
+      return CircleAvatar(backgroundImage: NetworkImage(photoUrl));
+    }
+
+    return CircleAvatar(child: Text(fallbackText));
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasRequests = _incomingRequests.isNotEmpty;
@@ -250,7 +260,23 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
                 return Card(
                   child: ListTile(
-                    leading: CircleAvatar(child: Text(rankIcon)),
+                    leading: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        _buildUserAvatar(user, rankIcon),
+                        Positioned(
+                          right: -4,
+                          bottom: -4,
+                          child: CircleAvatar(
+                            radius: 10,
+                            child: Text(
+                              rankIcon,
+                              style: const TextStyle(fontSize: 10),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                     title: Text(
                       isCurrentUser
                           ? '${user['publicName'] ?? 'You'} (You)'

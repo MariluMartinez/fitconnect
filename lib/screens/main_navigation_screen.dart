@@ -17,6 +17,7 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = 0;
+  int _friendRequestCount = 0;
 
   final FitbitHealthService fitbitHealthService = FitbitHealthService();
   final FirestoreService firestoreService = FirestoreService();
@@ -72,6 +73,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void initState() {
     super.initState();
     _loadUserGoals();
+    _loadFriendRequestCount();
   }
 
   Future<void> _loadUserGoals() async {
@@ -84,6 +86,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       distanceGoal = (profile['distanceGoal'] ?? 3.0).toDouble();
       activeMinutesGoal = profile['activeMinutesGoal'] ?? 30;
       sleepGoal = profile['sleepGoal'] ?? 8;
+    });
+  }
+
+  Future<void> _loadFriendRequestCount() async {
+    final count = await firestoreService.getIncomingFriendRequestCount();
+
+    if (!mounted) return;
+
+    setState(() {
+      _friendRequestCount = count;
     });
   }
 
@@ -136,7 +148,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         selectedItemColor: const Color(0xFF7C5CFA),
-        items: const [
+        items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
             label: 'Home',
@@ -150,7 +162,24 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             label: 'Meetups',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.people_outline),
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(Icons.people_outline),
+                if (_friendRequestCount > 0)
+                  Positioned(
+                    right: -8,
+                    top: -6,
+                    child: CircleAvatar(
+                      radius: 8,
+                      child: Text(
+                        '$_friendRequestCount',
+                        style: const TextStyle(fontSize: 10),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             label: 'Friends',
           ),
           BottomNavigationBarItem(

@@ -249,4 +249,18 @@ class FirestoreService {
 
     await batch.commit();
   }
+
+  Future<int> getIncomingFriendRequestCount() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) return 0;
+
+    final query = await _db
+        .collection('friendRequests')
+        .where('toUid', isEqualTo: currentUser.uid)
+        .where('status', isEqualTo: 'pending')
+        .get();
+
+    return query.docs.length;
+  }
 }
