@@ -275,4 +275,30 @@ class FirestoreService {
 
     return query.docs.length;
   }
+
+  Future<List<Map<String, dynamic>>> getOutgoingFriendRequests() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) return [];
+
+    final query = await _db
+        .collection('friendRequests')
+        .where('fromUid', isEqualTo: currentUser.uid)
+        .where('status', isEqualTo: 'pending')
+        .get();
+
+    final requests = <Map<String, dynamic>>[];
+
+    for (final doc in query.docs) {
+      final data = doc.data();
+      final toUid = data['toUid'];
+
+      final userDoc = await _db.collection('users').doc(toUid).get();
+      final userData = userDoc.data();
+
+      requests.add({'requestId': doc.id, ...data, 'toUser': userData});
+    }
+
+    return requests;
+  }
 }

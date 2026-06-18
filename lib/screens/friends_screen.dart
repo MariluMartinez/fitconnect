@@ -15,6 +15,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
   List<Map<String, dynamic>> _friends = [];
   List<Map<String, dynamic>> _incomingRequests = [];
+  List<Map<String, dynamic>> _outgoingRequests = [];
   List<Map<String, dynamic>> _leaderboard = [];
 
   @override
@@ -22,6 +23,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
     super.initState();
     _loadFriends();
     _loadIncomingRequests();
+    _loadOutgoingRequests();
     _loadLeaderboard();
   }
 
@@ -52,6 +54,16 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
     setState(() {
       _incomingRequests = requests;
+    });
+  }
+
+  Future<void> _loadOutgoingRequests() async {
+    final requests = await firestoreService.getOutgoingFriendRequests();
+
+    if (!mounted) return;
+
+    setState(() {
+      _outgoingRequests = requests;
     });
   }
 
@@ -107,6 +119,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
             Future<void> sendRequest(String uid) async {
               await firestoreService.sendFriendRequest(uid);
+              await _loadOutgoingRequests();
 
               if (!context.mounted) return;
 
@@ -209,6 +222,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
         onRefresh: () async {
           await _loadFriends();
           await _loadIncomingRequests();
+          await _loadOutgoingRequests();
           await _loadLeaderboard();
         },
         child: ListView(
@@ -237,6 +251,27 @@ class _FriendsScreenState extends State<FriendsScreen> {
                       },
                       child: const Text('Accept'),
                     ),
+                  ),
+                );
+              }),
+              const SizedBox(height: 24),
+            ],
+            if (_outgoingRequests.isNotEmpty) ...[
+              const Text(
+                'Sent Requests',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              ..._outgoingRequests.map((request) {
+                final toUser = request['toUser'] as Map<String, dynamic>?;
+
+                return Card(
+                  child: ListTile(
+                    leading: const CircleAvatar(
+                      child: Icon(Icons.hourglass_empty),
+                    ),
+                    title: Text(toUser?['publicName'] ?? 'User'),
+                    subtitle: const Text('Pending'),
                   ),
                 );
               }),
