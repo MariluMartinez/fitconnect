@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../services/firestore_service.dart';
 
 class FriendsScreen extends StatefulWidget {
-  const FriendsScreen({super.key});
+  final VoidCallback? onFriendRequestsChanged;
+
+  const FriendsScreen({super.key, this.onFriendRequestsChanged});
 
   @override
   State<FriendsScreen> createState() => _FriendsScreenState();
@@ -61,6 +63,9 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
     await _loadIncomingRequests();
     await _loadFriends();
+    await _loadLeaderboard();
+
+    widget.onFriendRequestsChanged?.call();
 
     if (!mounted) return;
 

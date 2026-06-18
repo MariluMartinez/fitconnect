@@ -234,18 +234,30 @@ class FirestoreService {
 
     if (currentUser == null) return;
 
+    final currentUid = currentUser.uid;
+
     final batch = _db.batch();
 
-    final currentUserRef = _db.collection('users').doc(currentUser.uid);
+    final currentUserRef = _db.collection('users').doc(currentUid);
     final friendRef = _db.collection('users').doc(friendUid);
+
+    final requestOneRef = _db
+        .collection('friendRequests')
+        .doc('${currentUid}_$friendUid');
+    final requestTwoRef = _db
+        .collection('friendRequests')
+        .doc('${friendUid}_$currentUid');
 
     batch.update(currentUserRef, {
       'friends': FieldValue.arrayRemove([friendUid]),
     });
 
     batch.update(friendRef, {
-      'friends': FieldValue.arrayRemove([currentUser.uid]),
+      'friends': FieldValue.arrayRemove([currentUid]),
     });
+
+    batch.delete(requestOneRef);
+    batch.delete(requestTwoRef);
 
     await batch.commit();
   }
