@@ -139,14 +139,37 @@ class GamesScreen extends StatelessWidget {
             const SizedBox(height: 32),
 
             const Text(
-              'Group Challenges',
+              'Current Challenges',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 16),
 
             SizedBox(
-              height: 175,
+              height: 205,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  _GroupChallengeCard(
+                    title: 'No Active Challenges',
+                    subtitle: 'Start a challenge below',
+                    progressText: '0 active',
+                    icon: Icons.flag_outlined,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            const Text(
+              'Start a Challenge',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 16),
+
+            SizedBox(
+              height: 205,
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 children: [
@@ -159,15 +182,29 @@ class GamesScreen extends StatelessWidget {
                   _GroupChallengeCard(
                     title: 'Bingo',
                     subtitle: 'Weekly challenge',
-                    progressText: '2 players active',
+                    progressText: 'Invite friends',
                     icon: Icons.grid_view,
                   ),
 
                   _GroupChallengeCard(
                     title: 'Step Race',
                     subtitle: 'Most steps wins',
-                    progressText: '5 players active',
+                    progressText: 'Invite friends',
                     icon: Icons.emoji_events,
+                  ),
+
+                  _GroupChallengeCard(
+                    title: 'Distance',
+                    subtitle: 'Most miles wins',
+                    progressText: 'Invite friends',
+                    icon: Icons.map,
+                  ),
+
+                  _GroupChallengeCard(
+                    title: 'Active Minutes',
+                    subtitle: 'Most active minutes',
+                    progressText: 'Invite friends',
+                    icon: Icons.local_fire_department,
                   ),
                 ],
               ),
@@ -478,6 +515,8 @@ class _GroupChallengeCard extends StatelessWidget {
 
           Text(
             title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
 
