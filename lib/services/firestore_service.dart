@@ -301,4 +301,21 @@ class FirestoreService {
 
     return requests;
   }
+
+  Future<void> createChallenge({
+    required String type,
+    required List<String> playerUids,
+  }) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) return;
+
+    await _db.collection('challenges').add({
+      'type': type,
+      'status': 'pending',
+      'createdBy': currentUser.uid,
+      'players': playerUids,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
 }
