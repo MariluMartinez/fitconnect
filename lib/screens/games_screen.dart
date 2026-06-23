@@ -320,6 +320,7 @@ class _GamesScreenState extends State<GamesScreen> {
                                       (index) => 'Friend ${index + 1}',
                                     ),
                                     snapshot: widget.snapshot,
+                                    challengeId: challenge['id'],
                                   ),
                                 ),
                               );

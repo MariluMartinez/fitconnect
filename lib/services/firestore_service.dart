@@ -378,4 +378,36 @@ class FirestoreService {
       return {'id': doc.id, ...doc.data()};
     }).toList();
   }
+
+  Future<void> saveBingoCompletedSquares({
+    required String challengeId,
+    required List<int> completedSquares,
+  }) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null || challengeId.isEmpty) return;
+
+    await _db.collection('challenges').doc(challengeId).set({
+      'bingoProgress': {currentUser.uid: completedSquares},
+    }, SetOptions(merge: true));
+  }
+
+  Future<List<int>> getBingoCompletedSquares(String challengeId) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null || challengeId.isEmpty) return [];
+
+    final doc = await _db.collection('challenges').doc(challengeId).get();
+    final data = doc.data();
+
+    final bingoProgress = data?['bingoProgress'] as Map<String, dynamic>?;
+
+    if (bingoProgress == null) return [];
+
+    final userSquares = bingoProgress[currentUser.uid];
+
+    if (userSquares == null) return [];
+
+    return List<int>.from(userSquares);
+  }
 }

@@ -81,7 +81,8 @@ class _InviteFriendsScreenState extends State<InviteFriendsScreen> {
                           MaterialPageRoute(
                             builder: (_) => BingoGameScreen(
                               invitedFriends: selectedFriends.toList(),
-                              snapshot: widget.snapshot, 
+                              snapshot: widget.snapshot,
+                              challengeId: '',
                             ),
                           ),
                         );

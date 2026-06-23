@@ -3,15 +3,18 @@ import 'package:flutter/material.dart';
 import '../services/health_service.dart';
 import '../models/bingo_goal.dart';
 import '../widgets/player_card.dart';
+import '../services/firestore_service.dart';
 
 class BingoGameScreen extends StatefulWidget {
   final List<String> invitedFriends;
   final HealthSnapshot? snapshot;
+  final String challengeId;
 
   const BingoGameScreen({
     super.key,
     required this.invitedFriends,
     required this.snapshot,
+    required this.challengeId,
   });
 
   @override
@@ -23,6 +26,8 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
   double usedDistance = 0.0;
   int usedActiveMinutes = 0;
 
+  final FirestoreService firestoreService = FirestoreService();
+
   late final List<BingoGoal> bingoGoals;
 
   final Set<int> completedSquares = {};
@@ -33,6 +38,7 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
   void initState() {
     super.initState();
     bingoGoals = _generateRandomBingoBoard();
+    _loadSavedCompletedSquares();
   }
 
   List<BingoGoal> _generateRandomBingoBoard() {
@@ -81,6 +87,18 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
     }
 
     return board;
+  }
+
+  Future<void> _loadSavedCompletedSquares() async {
+    final savedSquares = await firestoreService.getBingoCompletedSquares(
+      widget.challengeId,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      completedSquares.addAll(savedSquares);
+    });
   }
 
   @override
@@ -272,6 +290,10 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
         });
 
         _checkForPatternWin(context, goal.label);
+        firestoreService.saveBingoCompletedSquares(
+          challengeId: widget.challengeId,
+          completedSquares: completedSquares.toList(),
+        );
       } else {
         _showNotEnoughMessage(
           context,
@@ -290,6 +312,10 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
         });
 
         _checkForPatternWin(context, goal.label);
+        firestoreService.saveBingoCompletedSquares(
+          challengeId: widget.challengeId,
+          completedSquares: completedSquares.toList(),
+        );
       } else {
         _showNotEnoughMessage(
           context,
@@ -308,6 +334,10 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
         });
 
         _checkForPatternWin(context, goal.label);
+        firestoreService.saveBingoCompletedSquares(
+          challengeId: widget.challengeId,
+          completedSquares: completedSquares.toList(),
+        );
       } else {
         _showNotEnoughMessage(
           context,
