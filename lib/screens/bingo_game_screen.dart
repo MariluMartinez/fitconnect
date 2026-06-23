@@ -28,17 +28,20 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
 
   final FirestoreService firestoreService = FirestoreService();
 
-  late final List<BingoGoal> bingoGoals;
+  List<BingoGoal> bingoGoals = [];
 
   final Set<int> completedSquares = {};
+
+  Map<String, List<int>> playerProgress = {};
 
   final Set<int> targetShapeSquares = {0, 4, 6, 8, 12, 16, 18, 20, 24};
 
   @override
   void initState() {
     super.initState();
-    bingoGoals = _generateRandomBingoBoard();
+    _loadBingoBoard();
     _loadSavedCompletedSquares();
+    _loadPlayerProgress();
   }
 
   List<BingoGoal> _generateRandomBingoBoard() {
@@ -89,6 +92,69 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
     return board;
   }
 
+  Future<void> _loadBingoBoard() async {
+    final savedBoard = await firestoreService.getBingoBoard(widget.challengeId);
+
+    if (savedBoard != null) {
+      if (!mounted) return;
+
+      setState(() {
+        bingoGoals = savedBoard.map((tile) {
+          final typeString = tile['type'];
+          final label = tile['label'];
+          final requiredValue = tile['requiredValue'];
+
+          BingoGoalType type;
+
+          if (typeString == 'steps') {
+            type = BingoGoalType.steps;
+          } else if (typeString == 'distance') {
+            type = BingoGoalType.distance;
+          } else {
+            type = BingoGoalType.activeMinutes;
+          }
+
+          return BingoGoal(
+            type: type,
+            label: label,
+            requiredValue: (requiredValue as num).toDouble(),
+          );
+        }).toList();
+      });
+
+      return;
+    }
+
+    final newBoard = _generateRandomBingoBoard();
+
+    await firestoreService.saveBingoBoard(
+      challengeId: widget.challengeId,
+      board: newBoard.map((goal) {
+        String typeString;
+
+        if (goal.type == BingoGoalType.steps) {
+          typeString = 'steps';
+        } else if (goal.type == BingoGoalType.distance) {
+          typeString = 'distance';
+        } else {
+          typeString = 'activeMinutes';
+        }
+
+        return {
+          'type': typeString,
+          'label': goal.label,
+          'requiredValue': goal.requiredValue,
+        };
+      }).toList(),
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      bingoGoals = newBoard;
+    });
+  }
+
   Future<void> _loadSavedCompletedSquares() async {
     final savedSquares = await firestoreService.getBingoCompletedSquares(
       widget.challengeId,
@@ -98,6 +164,18 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
 
     setState(() {
       completedSquares.addAll(savedSquares);
+    });
+  }
+
+  Future<void> _loadPlayerProgress() async {
+    final progress = await firestoreService.getBingoProgressForChallenge(
+      widget.challengeId,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      playerProgress = progress;
     });
   }
 
@@ -240,12 +318,27 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
               height: 120,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                itemCount: players.length,
+                itemCount: playerProgress.isEmpty ? 1 : playerProgress.length,
                 itemBuilder: (context, index) {
+                  if (playerProgress.isEmpty) {
+                    return PlayerCard(
+                      name: 'You',
+                      targetShapeSquares: targetShapeSquares,
+                      completedSquares: completedSquares,
+                    );
+                  }
+
+                  final uid = playerProgress.keys.elementAt(index);
+                  final squares = playerProgress[uid] ?? [];
+
+                  final isYou =
+                      squares.toSet().containsAll(completedSquares) &&
+                      completedSquares.toSet().containsAll(squares.toSet());
+
                   return PlayerCard(
-                    name: players[index],
+                    name: isYou ? 'You' : 'Player ${index + 1}',
                     targetShapeSquares: targetShapeSquares,
-                    completedSquares: index == 0 ? completedSquares : null,
+                    completedSquares: squares.toSet(),
                   );
                 },
               ),
@@ -294,6 +387,7 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
           challengeId: widget.challengeId,
           completedSquares: completedSquares.toList(),
         );
+        _loadPlayerProgress();
       } else {
         _showNotEnoughMessage(
           context,
@@ -316,6 +410,7 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
           challengeId: widget.challengeId,
           completedSquares: completedSquares.toList(),
         );
+        _loadPlayerProgress();
       } else {
         _showNotEnoughMessage(
           context,
@@ -338,6 +433,7 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
           challengeId: widget.challengeId,
           completedSquares: completedSquares.toList(),
         );
+        _loadPlayerProgress();
       } else {
         _showNotEnoughMessage(
           context,

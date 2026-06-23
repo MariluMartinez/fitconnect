@@ -410,4 +410,61 @@ class FirestoreService {
 
     return List<int>.from(userSquares);
   }
+
+  Future<void> saveBingoBoard({
+    required String challengeId,
+    required List<Map<String, dynamic>> board,
+  }) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null || challengeId.isEmpty) return;
+
+    await _db.collection('challenges').doc(challengeId).set({
+      'bingoBoards': {currentUser.uid: board},
+    }, SetOptions(merge: true));
+  }
+
+  Future<List<Map<String, dynamic>>?> getBingoBoard(String challengeId) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null || challengeId.isEmpty) return null;
+
+    final doc = await _db.collection('challenges').doc(challengeId).get();
+    final data = doc.data();
+
+    if (data == null) return null;
+
+    final boards = data['bingoBoards'] as Map<String, dynamic>?;
+
+    if (boards == null) return null;
+
+    final board = boards[currentUser.uid];
+
+    if (board == null) return null;
+
+    return List<Map<String, dynamic>>.from(board);
+  }
+
+  Future<Map<String, List<int>>> getBingoProgressForChallenge(
+    String challengeId,
+  ) async {
+    if (challengeId.isEmpty) return {};
+
+    final doc = await _db.collection('challenges').doc(challengeId).get();
+    final data = doc.data();
+
+    if (data == null) return {};
+
+    final bingoProgress = data['bingoProgress'] as Map<String, dynamic>?;
+
+    if (bingoProgress == null) return {};
+
+    final progress = <String, List<int>>{};
+
+    bingoProgress.forEach((uid, squares) {
+      progress[uid] = List<int>.from(squares);
+    });
+
+    return progress;
+  }
 }
