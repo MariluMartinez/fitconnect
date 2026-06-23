@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/health_service.dart';
 import 'invite_friends_screen.dart';
+import 'bingo_game_screen.dart';
 import '../services/firestore_service.dart';
 
 class GamesScreen extends StatefulWidget {
@@ -24,11 +25,13 @@ class GamesScreen extends StatefulWidget {
 class _GamesScreenState extends State<GamesScreen> {
   final FirestoreService firestoreService = FirestoreService();
   List<Map<String, dynamic>> _currentChallenges = [];
+  List<Map<String, dynamic>> _pendingChallenges = [];
 
   @override
   void initState() {
     super.initState();
     _loadCurrentChallenges();
+    _loadPendingChallenges();
   }
 
   Future<void> _loadCurrentChallenges() async {
@@ -39,6 +42,44 @@ class _GamesScreenState extends State<GamesScreen> {
     setState(() {
       _currentChallenges = challenges;
     });
+  }
+
+  Future<void> _loadPendingChallenges() async {
+    final firestoreService = FirestoreService();
+
+    final challenges = await firestoreService.getPendingChallenges();
+
+    if (!mounted) return;
+
+    setState(() {
+      _pendingChallenges = challenges;
+    });
+  }
+
+  Future<void> _acceptChallenge(String challengeId) async {
+    await firestoreService.acceptChallenge(challengeId);
+
+    await _loadPendingChallenges();
+    await _loadCurrentChallenges();
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Challenge accepted')));
+  }
+
+  Future<void> _declineChallenge(String challengeId) async {
+    await firestoreService.declineChallenge(challengeId);
+
+    await _loadPendingChallenges();
+    await _loadCurrentChallenges();
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Challenge declined')));
   }
 
   @override
@@ -161,6 +202,56 @@ class _GamesScreenState extends State<GamesScreen> {
               ),
             ),
 
+            if (_pendingChallenges.isNotEmpty) ...[
+              const SizedBox(height: 32),
+
+              const Text(
+                'Challenge Invitations',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+
+              const SizedBox(height: 16),
+
+              SizedBox(
+                height: 205,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: _pendingChallenges.map((challenge) {
+                    final type = challenge['type'] ?? 'challenge';
+
+                    String title;
+                    IconData icon;
+
+                    if (type == 'bingo') {
+                      title = 'Bingo Invite';
+                      icon = Icons.grid_view;
+                    } else if (type == 'step_race') {
+                      title = 'Step Race Invite';
+                      icon = Icons.emoji_events;
+                    } else if (type == 'distance') {
+                      title = 'Distance Invite';
+                      icon = Icons.map;
+                    } else {
+                      title = 'Challenge Invite';
+                      icon = Icons.flag_outlined;
+                    }
+
+                    return _ChallengeInviteCard(
+                      title: title,
+                      subtitle: 'Someone invited you',
+                      icon: icon,
+                      onAccept: () {
+                        _acceptChallenge(challenge['id']);
+                      },
+                      onDecline: () {
+                        _declineChallenge(challenge['id']);
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+
             const SizedBox(height: 32),
 
             const Text(
@@ -218,6 +309,22 @@ class _GamesScreenState extends State<GamesScreen> {
                           subtitle: '${players.length} players',
                           progressText: statusText,
                           icon: icon,
+                          onTap: () {
+                            if (type == 'bingo') {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => BingoGameScreen(
+                                    invitedFriends: List.generate(
+                                      players.length - 1,
+                                      (index) => 'Friend ${index + 1}',
+                                    ),
+                                    snapshot: widget.snapshot,
+                                  ),
+                                ),
+                              );
+                            }
+                          },
                         );
                       }).toList(),
               ),
@@ -687,6 +794,81 @@ class _GroupChallengeCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ChallengeInviteCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback onAccept;
+  final VoidCallback onDecline;
+
+  const _ChallengeInviteCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.onAccept,
+    required this.onDecline,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 260,
+      margin: const EdgeInsets.only(right: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7E6),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x10000000),
+            blurRadius: 12,
+            offset: Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 30),
+
+          const SizedBox(height: 10),
+
+          Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+
+          const SizedBox(height: 4),
+
+          Text(subtitle, style: const TextStyle(color: Colors.grey)),
+
+          const Spacer(),
+
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: onDecline,
+                  child: const Text('Decline', style: TextStyle(fontSize: 12)),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: onAccept,
+                  child: const Text('Accept', style: TextStyle(fontSize: 12)),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

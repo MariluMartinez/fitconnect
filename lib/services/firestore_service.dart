@@ -315,8 +315,53 @@ class FirestoreService {
       'status': 'pending',
       'createdBy': currentUser.uid,
       'players': [currentUser.uid, ...playerUids],
+      'acceptedPlayers': [currentUser.uid],
+      'pendingPlayers': playerUids,
+      'declinedPlayers': [],
       'createdAt': FieldValue.serverTimestamp(),
     });
+  }
+
+  Future<void> acceptChallenge(String challengeId) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) return;
+
+    final challengeRef = _db.collection('challenges').doc(challengeId);
+
+    await challengeRef.update({
+      'acceptedPlayers': FieldValue.arrayUnion([currentUser.uid]),
+      'pendingPlayers': FieldValue.arrayRemove([currentUser.uid]),
+      'status': 'active',
+    });
+  }
+
+  Future<void> declineChallenge(String challengeId) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) return;
+
+    final challengeRef = _db.collection('challenges').doc(challengeId);
+
+    await challengeRef.update({
+      'declinedPlayers': FieldValue.arrayUnion([currentUser.uid]),
+      'pendingPlayers': FieldValue.arrayRemove([currentUser.uid]),
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getPendingChallenges() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) return [];
+
+    final query = await _db
+        .collection('challenges')
+        .where('pendingPlayers', arrayContains: currentUser.uid)
+        .get();
+
+    return query.docs.map((doc) {
+      return {'id': doc.id, ...doc.data()};
+    }).toList();
   }
 
   Future<List<Map<String, dynamic>>> getCurrentChallenges() async {
@@ -326,7 +371,7 @@ class FirestoreService {
 
     final query = await _db
         .collection('challenges')
-        .where('players', arrayContains: currentUser.uid)
+        .where('acceptedPlayers', arrayContains: currentUser.uid)
         .get();
 
     return query.docs.map((doc) {
