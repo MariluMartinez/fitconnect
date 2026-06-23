@@ -314,8 +314,23 @@ class FirestoreService {
       'type': type,
       'status': 'pending',
       'createdBy': currentUser.uid,
-      'players': playerUids,
+      'players': [currentUser.uid, ...playerUids],
       'createdAt': FieldValue.serverTimestamp(),
     });
+  }
+
+  Future<List<Map<String, dynamic>>> getCurrentChallenges() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) return [];
+
+    final query = await _db
+        .collection('challenges')
+        .where('players', arrayContains: currentUser.uid)
+        .get();
+
+    return query.docs.map((doc) {
+      return {'id': doc.id, ...doc.data()};
+    }).toList();
   }
 }

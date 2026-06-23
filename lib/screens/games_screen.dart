@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../services/health_service.dart';
 import 'invite_friends_screen.dart';
+import '../services/firestore_service.dart';
 
-class GamesScreen extends StatelessWidget {
+class GamesScreen extends StatefulWidget {
   final HealthSnapshot? snapshot;
   final int stepsGoal;
   final double distanceGoal;
@@ -17,22 +18,46 @@ class GamesScreen extends StatelessWidget {
   });
 
   @override
+  State<GamesScreen> createState() => _GamesScreenState();
+}
+
+class _GamesScreenState extends State<GamesScreen> {
+  final FirestoreService firestoreService = FirestoreService();
+  List<Map<String, dynamic>> _currentChallenges = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentChallenges();
+  }
+
+  Future<void> _loadCurrentChallenges() async {
+    final challenges = await firestoreService.getCurrentChallenges();
+
+    if (!mounted) return;
+
+    setState(() {
+      _currentChallenges = challenges;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final steps = snapshot?.steps ?? 0;
-    final distance = snapshot?.distanceMiles ?? 0.0;
+    final steps = widget.snapshot?.steps ?? 0;
+    final distance = widget.snapshot?.distanceMiles ?? 0.0;
     final activeMinutes = 0; // Later: connect real Fitbit active minutes.
 
-    final stepsProgress = stepsGoal == 0
+    final stepsProgress = widget.stepsGoal == 0
         ? 0.0
-        : (steps / stepsGoal).clamp(0.0, 1.0);
+        : (steps / widget.stepsGoal).clamp(0.0, 1.0);
 
-    final distanceProgress = distanceGoal == 0
+    final distanceProgress = widget.distanceGoal == 0
         ? 0.0
-        : (distance / distanceGoal).clamp(0.0, 1.0);
+        : (distance / widget.distanceGoal).clamp(0.0, 1.0);
 
-    final activeMinutesProgress = activeMinutesGoal == 0
+    final activeMinutesProgress = widget.activeMinutesGoal == 0
         ? 0.0
-        : (activeMinutes / activeMinutesGoal).clamp(0.0, 1.0);
+        : (activeMinutes / widget.activeMinutesGoal).clamp(0.0, 1.0);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Games')),
@@ -56,7 +81,7 @@ class GamesScreen extends StatelessWidget {
                   _GoalCard(
                     title: 'Steps',
                     value: steps.toString(),
-                    goal: stepsGoal.toString(),
+                    goal: widget.stepsGoal.toString(),
                     unit: 'steps',
                     progress: stepsProgress,
                     icon: Icons.directions_walk,
@@ -65,7 +90,7 @@ class GamesScreen extends StatelessWidget {
                         context,
                         title: 'Steps',
                         value: steps.toString(),
-                        goal: stepsGoal.toString(),
+                        goal: widget.stepsGoal.toString(),
                         unit: 'steps',
                         progress: stepsProgress,
                         streakDays: 3,
@@ -76,7 +101,7 @@ class GamesScreen extends StatelessWidget {
                   _GoalCard(
                     title: 'Distance',
                     value: distance.toStringAsFixed(1),
-                    goal: distanceGoal.toStringAsFixed(1),
+                    goal: widget.distanceGoal.toStringAsFixed(1),
                     unit: 'miles',
                     progress: distanceProgress,
                     icon: Icons.map,
@@ -85,7 +110,7 @@ class GamesScreen extends StatelessWidget {
                         context,
                         title: 'Distance',
                         value: distance.toStringAsFixed(1),
-                        goal: distanceGoal.toStringAsFixed(1),
+                        goal: widget.distanceGoal.toStringAsFixed(1),
                         unit: 'miles',
                         progress: distanceProgress,
                         streakDays: 2,
@@ -96,7 +121,7 @@ class GamesScreen extends StatelessWidget {
                   _GoalCard(
                     title: 'Active Zone',
                     value: activeMinutes.toString(),
-                    goal: activeMinutesGoal.toString(),
+                    goal: widget.activeMinutesGoal.toString(),
                     unit: 'min',
                     progress: activeMinutesProgress,
                     icon: Icons.local_fire_department,
@@ -105,7 +130,7 @@ class GamesScreen extends StatelessWidget {
                         context,
                         title: 'Active Zone',
                         value: activeMinutes.toString(),
-                        goal: activeMinutesGoal.toString(),
+                        goal: widget.activeMinutesGoal.toString(),
                         unit: 'min',
                         progress: activeMinutesProgress,
                         streakDays: 1,
@@ -149,14 +174,52 @@ class GamesScreen extends StatelessWidget {
               height: 205,
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                children: [
-                  _GroupChallengeCard(
-                    title: 'No Active Challenges',
-                    subtitle: 'Start a challenge below',
-                    progressText: '0 active',
-                    icon: Icons.flag_outlined,
-                  ),
-                ],
+                children: _currentChallenges.isEmpty
+                    ? [
+                        _GroupChallengeCard(
+                          title: 'No Active Challenges',
+                          subtitle: 'Start a challenge below',
+                          progressText: '0 active',
+                          icon: Icons.flag_outlined,
+                        ),
+                      ]
+                    : _currentChallenges.map((challenge) {
+                        final type = challenge['type'] ?? 'challenge';
+                        final players = List<String>.from(
+                          challenge['players'] ?? [],
+                        );
+                        final status = challenge['status'] ?? 'pending';
+
+                        final statusText = status == 'pending'
+                            ? 'Waiting for players'
+                            : status == 'active'
+                            ? 'Active now'
+                            : status.toString();
+
+                        String title;
+                        IconData icon;
+
+                        if (type == 'bingo') {
+                          title = 'Bingo';
+                          icon = Icons.grid_view;
+                        } else if (type == 'step_race') {
+                          title = 'Step Race';
+                          icon = Icons.emoji_events;
+                        } else if (type == 'distance') {
+                          title = 'Distance';
+                          icon = Icons.map;
+                        } else {
+                          title = 'Challenge';
+                          icon = Icons.flag_outlined;
+                        }
+
+                        return _GroupChallengeCard(
+                          title: title,
+                          subtitle: '${players.length} players',
+                          progressText: statusText,
+                          icon: icon,
+                        );
+                      }).toList(),
               ),
             ),
             const SizedBox(height: 32),
@@ -184,6 +247,9 @@ class GamesScreen extends StatelessWidget {
                     subtitle: 'Weekly challenge',
                     progressText: 'Invite friends',
                     icon: Icons.grid_view,
+                    onTap: () {
+                      _createQuickChallenge(context, 'bingo');
+                    },
                   ),
 
                   _GroupChallengeCard(
@@ -191,6 +257,9 @@ class GamesScreen extends StatelessWidget {
                     subtitle: 'Most steps wins',
                     progressText: 'Invite friends',
                     icon: Icons.emoji_events,
+                    onTap: () {
+                      _createQuickChallenge(context, 'step_race');
+                    },
                   ),
 
                   _GroupChallengeCard(
@@ -198,6 +267,9 @@ class GamesScreen extends StatelessWidget {
                     subtitle: 'Most miles wins',
                     progressText: 'Invite friends',
                     icon: Icons.map,
+                    onTap: () {
+                      _createQuickChallenge(context, 'distance');
+                    },
                   ),
 
                   _GroupChallengeCard(
@@ -247,7 +319,7 @@ class GamesScreen extends StatelessWidget {
                     MaterialPageRoute(
                       builder: (_) => InviteFriendsScreen(
                         challengeName: 'Bingo',
-                        snapshot: snapshot,
+                        snapshot: widget.snapshot,
                       ),
                     ),
                   );
@@ -282,6 +354,91 @@ class GamesScreen extends StatelessWidget {
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  Future<void> _createQuickChallenge(BuildContext context, String type) async {
+    final firestoreService = FirestoreService();
+    final friends = await firestoreService.getCurrentUserFriends();
+
+    if (!context.mounted) return;
+
+    if (friends.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Add friends before starting a challenge'),
+        ),
+      );
+      return;
+    }
+
+    final selectedFriends = <String>{};
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text('Choose Friends'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: friends.map((friend) {
+                    final uid = friend['uid'];
+                    final name = friend['publicName'] ?? 'User';
+
+                    return CheckboxListTile(
+                      value: selectedFriends.contains(uid),
+                      title: Text(name),
+                      subtitle: Text(friend['email'] ?? ''),
+                      onChanged: (checked) {
+                        setDialogState(() {
+                          if (checked == true) {
+                            selectedFriends.add(uid);
+                          } else {
+                            selectedFriends.remove(uid);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                  },
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: selectedFriends.isEmpty
+                      ? null
+                      : () async {
+                          await firestoreService.createChallenge(
+                            type: type,
+                            playerUids: selectedFriends.toList(),
+                          );
+
+                          await _loadCurrentChallenges();
+
+                          if (!context.mounted) return;
+
+                          Navigator.pop(dialogContext);
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('$type challenge created')),
+                          );
+                        },
+                  child: const Text('Create'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -481,56 +638,55 @@ class _GroupChallengeCard extends StatelessWidget {
   final String subtitle;
   final String progressText;
   final IconData icon;
+  final VoidCallback? onTap;
 
   const _GroupChallengeCard({
     required this.title,
     required this.subtitle,
     required this.progressText,
     required this.icon,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 175,
-      margin: const EdgeInsets.only(right: 14),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x10000000),
-            blurRadius: 12,
-            offset: Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 30),
-
-          const SizedBox(height: 12),
-
-          Text(
-            title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-
-          const SizedBox(height: 6),
-
-          Text(subtitle, style: const TextStyle(color: Colors.grey)),
-
-          const Spacer(),
-
-          Text(
-            progressText,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-          ),
-        ],
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 175,
+        margin: const EdgeInsets.only(right: 14),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFEFF6FF),
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x10000000),
+              blurRadius: 12,
+              offset: Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 30),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            Text(subtitle, style: const TextStyle(color: Colors.grey)),
+            const Spacer(),
+            Text(
+              progressText,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -540,7 +696,7 @@ class _ChallengeOption extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _ChallengeOption({
     required this.title,
