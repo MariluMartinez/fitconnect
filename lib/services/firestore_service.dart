@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:math';
+import '../models/bingo_patterns.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -315,6 +317,9 @@ class FirestoreService {
 
     final creatorName = creatorDoc.data()?['publicName'] ?? 'You';
 
+    final random = Random();
+    final selectedPattern = bingoPatterns[random.nextInt(bingoPatterns.length)];
+
     await _db.collection('challenges').add({
       'title': title,
       'type': type,
@@ -326,6 +331,7 @@ class FirestoreService {
       'pendingPlayers': playerUids,
       'declinedPlayers': [],
       'createdAt': FieldValue.serverTimestamp(),
+      'targetShapeSquares': selectedPattern.toList(),
     });
   }
 
@@ -495,6 +501,23 @@ class FirestoreService {
     return (board as List).map((tile) {
       return Map<String, dynamic>.from(tile as Map);
     }).toList();
+  }
+
+  Future<Set<int>> getBingoPattern(String challengeId) async {
+    final doc = await _db.collection('challenges').doc(challengeId).get();
+    final data = doc.data();
+
+    if (data == null) {
+      return {0, 4, 6, 8, 12, 16, 18, 20, 24};
+    }
+
+    final savedPattern = data['targetShapeSquares'];
+
+    if (savedPattern == null) {
+      return {0, 4, 6, 8, 12, 16, 18, 20, 24};
+    }
+
+    return List<int>.from(savedPattern).toSet();
   }
 
   Future<Map<String, List<int>>> getBingoProgressForChallenge(

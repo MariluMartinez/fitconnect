@@ -42,7 +42,7 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
   bool isChallengeFinished = false;
   String winnerName = '';
 
-  final Set<int> targetShapeSquares = {0, 4, 6, 8, 12, 16, 18, 20, 24};
+  Set<int> targetShapeSquares = {0, 4, 6, 8, 12, 16, 18, 20, 24};
 
   @override
   void initState() {
@@ -54,6 +54,7 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
     _loadAcceptedPlayerUids();
     _loadPlayerPhotos();
     _loadChallengeStatus();
+    _loadBingoPattern();
   }
 
   List<BingoGoal> _generateRandomBingoBoard() {
@@ -164,6 +165,16 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
 
     setState(() {
       bingoGoals = newBoard;
+    });
+  }
+
+  Future<void> _loadBingoPattern() async {
+    final pattern = await firestoreService.getBingoPattern(widget.challengeId);
+
+    if (!mounted) return;
+
+    setState(() {
+      targetShapeSquares = pattern;
     });
   }
 
@@ -596,7 +607,7 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
       _showWinnerDialog(winnerName.isEmpty ? 'Someone' : winnerName);
       return;
     }
-    
+
     if (!targetShapeSquares.contains(index)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
