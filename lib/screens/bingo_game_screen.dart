@@ -33,6 +33,7 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
   final Set<int> completedSquares = {};
 
   Map<String, List<int>> playerProgress = {};
+  List<String> playerNames = [];
 
   final Set<int> targetShapeSquares = {0, 4, 6, 8, 12, 16, 18, 20, 24};
 
@@ -42,6 +43,7 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
     _loadBingoBoard();
     _loadSavedCompletedSquares();
     _loadPlayerProgress();
+    _loadPlayerNames();
   }
 
   List<BingoGoal> _generateRandomBingoBoard() {
@@ -179,6 +181,18 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
     });
   }
 
+  Future<void> _loadPlayerNames() async {
+    final names = await firestoreService.getChallengePlayerNames(
+      widget.challengeId,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      playerNames = names;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final players = ['You', ...widget.invitedFriends];
@@ -186,7 +200,7 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
     final totalSteps = widget.snapshot?.steps ?? 0;
     final totalDistance = widget.snapshot?.distanceMiles ?? 0.0;
 
-    // TEMP until we connect real Fitbit active zone minutes.
+    // temp until we connect real Fitbit active zone minutes.
     final totalActiveMinutes = 0;
 
     final availableSteps = totalSteps - usedSteps;
@@ -336,7 +350,11 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
                       completedSquares.toSet().containsAll(squares.toSet());
 
                   return PlayerCard(
-                    name: isYou ? 'You' : 'Player ${index + 1}',
+                    name: isYou
+                        ? 'You'
+                        : index < playerNames.length
+                        ? playerNames[index]
+                        : 'Player ${index + 1}',
                     targetShapeSquares: targetShapeSquares,
                     completedSquares: squares.toSet(),
                   );

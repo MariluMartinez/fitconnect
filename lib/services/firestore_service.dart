@@ -305,16 +305,23 @@ class FirestoreService {
   Future<void> createChallenge({
     required String type,
     required List<String> playerUids,
+    required String title,
   }) async {
     final currentUser = FirebaseAuth.instance.currentUser;
 
     if (currentUser == null) return;
 
+    final creatorDoc = await _db.collection('users').doc(currentUser.uid).get();
+
+    final creatorName = creatorDoc.data()?['publicName'] ?? 'You';
+
     await _db.collection('challenges').add({
+      'title': title,
       'type': type,
       'status': 'pending',
       'createdBy': currentUser.uid,
       'players': [currentUser.uid, ...playerUids],
+      'playerNames': {currentUser.uid: creatorName},
       'acceptedPlayers': [currentUser.uid],
       'pendingPlayers': playerUids,
       'declinedPlayers': [],
@@ -322,16 +329,54 @@ class FirestoreService {
     });
   }
 
+  Future<String> _getChallengeTitle(
+    String type,
+    List<String> playerUids,
+  ) async {
+    final names = <String>[];
+
+    for (final uid in playerUids.take(2)) {
+      final doc = await _db.collection('users').doc(uid).get();
+
+      final data = doc.data();
+
+      if (data != null) {
+        names.add(data['publicName'] ?? 'Friend');
+      }
+    }
+
+    final players = names.join(' & ');
+
+    if (type == 'bingo') {
+      return 'Bingo vs $players';
+    }
+
+    if (type == 'step_race') {
+      return 'Step Race vs $players';
+    }
+
+    if (type == 'distance') {
+      return 'Distance vs $players';
+    }
+
+    return 'Challenge vs $players';
+  }
+
   Future<void> acceptChallenge(String challengeId) async {
     final currentUser = FirebaseAuth.instance.currentUser;
 
     if (currentUser == null) return;
+
+    final userDoc = await _db.collection('users').doc(currentUser.uid).get();
+    final userName =
+        userDoc.data()?['publicName'] ?? currentUser.email ?? 'User';
 
     final challengeRef = _db.collection('challenges').doc(challengeId);
 
     await challengeRef.update({
       'acceptedPlayers': FieldValue.arrayUnion([currentUser.uid]),
       'pendingPlayers': FieldValue.arrayRemove([currentUser.uid]),
+      'playerNames.${currentUser.uid}': userName,
       'status': 'active',
     });
   }
@@ -442,7 +487,14 @@ class FirestoreService {
 
     if (board == null) return null;
 
-    return List<Map<String, dynamic>>.from(board);
+    // Old boards were saved as List<String>. Ignore those and generate a new board.
+    if (board is List && board.isNotEmpty && board.first is String) {
+      return null;
+    }
+
+    return (board as List).map((tile) {
+      return Map<String, dynamic>.from(tile as Map);
+    }).toList();
   }
 
   Future<Map<String, List<int>>> getBingoProgressForChallenge(
@@ -466,5 +518,19 @@ class FirestoreService {
     });
 
     return progress;
+  }
+
+  Future<List<String>> getChallengePlayerNames(String challengeId) async {
+    final doc = await _db.collection('challenges').doc(challengeId).get();
+
+    final data = doc.data();
+
+    if (data == null) return [];
+
+    final names = data['playerNames'] as Map<String, dynamic>?;
+
+    if (names == null) return [];
+
+    return names.values.map((e) => e.toString()).toList();
   }
 }

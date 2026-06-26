@@ -219,20 +219,17 @@ class _GamesScreenState extends State<GamesScreen> {
                   children: _pendingChallenges.map((challenge) {
                     final type = challenge['type'] ?? 'challenge';
 
-                    String title;
+                    final title = challenge['title'] ?? 'Challenge';
+
                     IconData icon;
 
                     if (type == 'bingo') {
-                      title = 'Bingo Invite';
                       icon = Icons.grid_view;
                     } else if (type == 'step_race') {
-                      title = 'Step Race Invite';
                       icon = Icons.emoji_events;
                     } else if (type == 'distance') {
-                      title = 'Distance Invite';
                       icon = Icons.map;
                     } else {
-                      title = 'Challenge Invite';
                       icon = Icons.flag_outlined;
                     }
 
@@ -287,20 +284,17 @@ class _GamesScreenState extends State<GamesScreen> {
                             ? 'Active now'
                             : status.toString();
 
-                        String title;
+                        final title = challenge['title'] ?? 'Challenge';
+
                         IconData icon;
 
                         if (type == 'bingo') {
-                          title = 'Bingo';
                           icon = Icons.grid_view;
                         } else if (type == 'step_race') {
-                          title = 'Step Race';
                           icon = Icons.emoji_events;
                         } else if (type == 'distance') {
-                          title = 'Distance';
                           icon = Icons.map;
                         } else {
-                          title = 'Challenge';
                           icon = Icons.flag_outlined;
                         }
 
@@ -483,6 +477,7 @@ class _GamesScreenState extends State<GamesScreen> {
     }
 
     final selectedFriends = <String>{};
+    final titleController = TextEditingController();
 
     await showDialog(
       context: context,
@@ -490,30 +485,43 @@ class _GamesScreenState extends State<GamesScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text('Choose Friends'),
+              title: const Text('Create Challenge'),
               content: SizedBox(
                 width: double.maxFinite,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: friends.map((friend) {
-                    final uid = friend['uid'];
-                    final name = friend['publicName'] ?? 'User';
+                  children: [
+                    TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(
+                        labelText: 'Challenge name',
+                        hintText: 'Example: Weekend Bingo',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
 
-                    return CheckboxListTile(
-                      value: selectedFriends.contains(uid),
-                      title: Text(name),
-                      subtitle: Text(friend['email'] ?? ''),
-                      onChanged: (checked) {
-                        setDialogState(() {
-                          if (checked == true) {
-                            selectedFriends.add(uid);
-                          } else {
-                            selectedFriends.remove(uid);
-                          }
-                        });
-                      },
-                    );
-                  }).toList(),
+                    const SizedBox(height: 12),
+
+                    ...friends.map((friend) {
+                      final uid = friend['uid'];
+                      final name = friend['publicName'] ?? 'User';
+
+                      return CheckboxListTile(
+                        value: selectedFriends.contains(uid),
+                        title: Text(name),
+                        subtitle: Text(friend['email'] ?? ''),
+                        onChanged: (checked) {
+                          setDialogState(() {
+                            if (checked == true) {
+                              selectedFriends.add(uid);
+                            } else {
+                              selectedFriends.remove(uid);
+                            }
+                          });
+                        },
+                      );
+                    }),
+                  ],
                 ),
               ),
               actions: [
@@ -527,9 +535,14 @@ class _GamesScreenState extends State<GamesScreen> {
                   onPressed: selectedFriends.isEmpty
                       ? null
                       : () async {
+                          final typedTitle = titleController.text.trim();
+
                           await firestoreService.createChallenge(
                             type: type,
                             playerUids: selectedFriends.toList(),
+                            title: typedTitle.isEmpty
+                                ? 'Bingo Challenge'
+                                : typedTitle,
                           );
 
                           await _loadCurrentChallenges();
@@ -597,29 +610,20 @@ class _GoalCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(icon, size: 30),
-
             const SizedBox(height: 12),
-
             Text(
               title,
               style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
             ),
-
             const Spacer(),
-
             Text(
               '$value / $goal',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-
             Text(unit, style: const TextStyle(color: Colors.grey)),
-
             const SizedBox(height: 8),
-
             LinearProgressIndicator(value: progress),
-
             const SizedBox(height: 6),
-
             Text('$percent% complete', style: const TextStyle(fontSize: 12)),
           ],
         ),
