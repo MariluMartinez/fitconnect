@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../services/health_service.dart';
 import '../models/bingo_goal.dart';
 import '../widgets/player_card.dart';
@@ -33,7 +34,9 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
   final Set<int> completedSquares = {};
 
   Map<String, List<int>> playerProgress = {};
-  List<String> playerNames = [];
+  Map<String, String> playerNames = {};
+  List<String> acceptedPlayerUids = [];
+  Map<String, String> playerPhotos = {};
 
   final Set<int> targetShapeSquares = {0, 4, 6, 8, 12, 16, 18, 20, 24};
 
@@ -44,6 +47,8 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
     _loadSavedCompletedSquares();
     _loadPlayerProgress();
     _loadPlayerNames();
+    _loadAcceptedPlayerUids();
+    _loadPlayerPhotos();
   }
 
   List<BingoGoal> _generateRandomBingoBoard() {
@@ -169,6 +174,18 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
     });
   }
 
+  Future<void> _loadAcceptedPlayerUids() async {
+    final uids = await firestoreService.getAcceptedPlayerUids(
+      widget.challengeId,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      acceptedPlayerUids = uids;
+    });
+  }
+
   Future<void> _loadPlayerProgress() async {
     final progress = await firestoreService.getBingoProgressForChallenge(
       widget.challengeId,
@@ -193,10 +210,20 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
     });
   }
 
+  Future<void> _loadPlayerPhotos() async {
+    final photos = await firestoreService.getChallengePlayerPhotos(
+      widget.challengeId,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      playerPhotos = photos;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final players = ['You', ...widget.invitedFriends];
-
     final totalSteps = widget.snapshot?.steps ?? 0;
     final totalDistance = widget.snapshot?.distanceMiles ?? 0.0;
 
@@ -332,29 +359,29 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
               height: 120,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                itemCount: playerProgress.isEmpty ? 1 : playerProgress.length,
+                itemCount: acceptedPlayerUids.isEmpty
+                    ? 1
+                    : acceptedPlayerUids.length,
                 itemBuilder: (context, index) {
-                  if (playerProgress.isEmpty) {
+                  final currentUid = FirebaseAuth.instance.currentUser?.uid;
+
+                  if (acceptedPlayerUids.isEmpty) {
                     return PlayerCard(
                       name: 'You',
+                      photoUrl: '',
                       targetShapeSquares: targetShapeSquares,
                       completedSquares: completedSquares,
                     );
                   }
 
-                  final uid = playerProgress.keys.elementAt(index);
+                  final uid = acceptedPlayerUids[index];
                   final squares = playerProgress[uid] ?? [];
 
-                  final isYou =
-                      squares.toSet().containsAll(completedSquares) &&
-                      completedSquares.toSet().containsAll(squares.toSet());
+                  final isYou = uid == currentUid;
 
                   return PlayerCard(
-                    name: isYou
-                        ? 'You'
-                        : index < playerNames.length
-                        ? playerNames[index]
-                        : 'Player ${index + 1}',
+                    name: isYou ? 'You' : playerNames[uid] ?? 'Unknown Player',
+                    photoUrl: playerPhotos[uid] ?? '',
                     targetShapeSquares: targetShapeSquares,
                     completedSquares: squares.toSet(),
                   );

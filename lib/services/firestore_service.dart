@@ -520,17 +520,53 @@ class FirestoreService {
     return progress;
   }
 
-  Future<List<String>> getChallengePlayerNames(String challengeId) async {
+  Future<Map<String, String>> getChallengePlayerNames(
+    String challengeId,
+  ) async {
     final doc = await _db.collection('challenges').doc(challengeId).get();
 
     final data = doc.data();
 
-    if (data == null) return [];
+    if (data == null) return {};
 
     final names = data['playerNames'] as Map<String, dynamic>?;
 
-    if (names == null) return [];
+    if (names == null) return {};
 
-    return names.values.map((e) => e.toString()).toList();
+    return names.map((uid, name) {
+      return MapEntry(uid, name.toString());
+    });
+  }
+
+  Future<Map<String, String>> getChallengePlayerPhotos(
+    String challengeId,
+  ) async {
+    final doc = await _db.collection('challenges').doc(challengeId).get();
+
+    final data = doc.data();
+
+    if (data == null) return {};
+
+    final playerUids = List<String>.from(data['acceptedPlayers'] ?? []);
+
+    final photos = <String, String>{};
+
+    for (final uid in playerUids) {
+      final userDoc = await _db.collection('users').doc(uid).get();
+      final userData = userDoc.data();
+
+      photos[uid] = userData?['photoUrl'] ?? '';
+    }
+
+    return photos;
+  }
+
+  Future<List<String>> getAcceptedPlayerUids(String challengeId) async {
+    final doc = await _db.collection('challenges').doc(challengeId).get();
+    final data = doc.data();
+
+    if (data == null) return [];
+
+    return List<String>.from(data['acceptedPlayers'] ?? []);
   }
 }

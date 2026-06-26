@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 
 class PlayerCard extends StatelessWidget {
   final String name;
+  final String photoUrl;
   final Set<int> targetShapeSquares;
   final Set<int>? completedSquares;
 
   const PlayerCard({
     super.key,
     required this.name,
+    required this.photoUrl,
     required this.targetShapeSquares,
     this.completedSquares,
   });
@@ -21,7 +23,6 @@ class PlayerCard extends StatelessWidget {
       displayCompletedSquares = completedSquares!;
     } else {
       final random = Random(name.hashCode);
-
       final targetList = targetShapeSquares.toList();
       targetList.shuffle(random);
 
@@ -34,20 +35,25 @@ class PlayerCard extends StatelessWidget {
         .length;
 
     return Container(
-      width: 160,
+      width: 170,
       margin: const EdgeInsets.only(right: 14),
       child: Row(
         children: [
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const CircleAvatar(
+              CircleAvatar(
                 radius: 18,
-                child: Icon(Icons.person, size: 18),
+                backgroundImage: photoUrl.isNotEmpty
+                    ? NetworkImage(photoUrl)
+                    : null,
+                child: photoUrl.isEmpty
+                    ? Text(name.isNotEmpty ? name[0].toUpperCase() : '?')
+                    : null,
               ),
               const SizedBox(height: 4),
               SizedBox(
-                width: 55,
+                width: 60,
                 child: Text(
                   name,
                   overflow: TextOverflow.ellipsis,
