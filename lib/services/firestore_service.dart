@@ -569,4 +569,29 @@ class FirestoreService {
 
     return List<String>.from(data['acceptedPlayers'] ?? []);
   }
+
+  Future<void> finishChallenge({required String challengeId}) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) return;
+
+    final userDoc = await _db.collection('users').doc(currentUser.uid).get();
+
+    final winnerName = userDoc.data()?['publicName'] ?? 'Unknown';
+
+    await _db.collection('challenges').doc(challengeId).update({
+      'status': 'finished',
+      'winnerUid': currentUser.uid,
+      'winnerName': winnerName,
+      'finishedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<Map<String, dynamic>?> getChallengeById(String challengeId) async {
+    final doc = await _db.collection('challenges').doc(challengeId).get();
+
+    if (!doc.exists) return null;
+
+    return {'id': doc.id, ...?doc.data()};
+  }
 }

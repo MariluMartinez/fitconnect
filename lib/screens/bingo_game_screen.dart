@@ -5,6 +5,7 @@ import '../services/health_service.dart';
 import '../models/bingo_goal.dart';
 import '../widgets/player_card.dart';
 import '../services/firestore_service.dart';
+import 'package:flutter/foundation.dart';
 
 class BingoGameScreen extends StatefulWidget {
   final List<String> invitedFriends;
@@ -38,6 +39,9 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
   List<String> acceptedPlayerUids = [];
   Map<String, String> playerPhotos = {};
 
+  bool isChallengeFinished = false;
+  String winnerName = '';
+
   final Set<int> targetShapeSquares = {0, 4, 6, 8, 12, 16, 18, 20, 24};
 
   @override
@@ -49,6 +53,7 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
     _loadPlayerNames();
     _loadAcceptedPlayerUids();
     _loadPlayerPhotos();
+    _loadChallengeStatus();
   }
 
   List<BingoGoal> _generateRandomBingoBoard() {
@@ -222,6 +227,26 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
     });
   }
 
+  Future<void> _loadChallengeStatus() async {
+    final challenge = await firestoreService.getChallengeById(
+      widget.challengeId,
+    );
+
+    if (challenge == null || !mounted) return;
+
+    final status = challenge['status'];
+    final winner = challenge['winnerName'] ?? 'Someone';
+
+    setState(() {
+      isChallengeFinished = status == 'finished';
+      winnerName = winner;
+    });
+
+    if (status == 'finished') {
+      _showWinnerDialog(winner);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final totalSteps = widget.snapshot?.steps ?? 0;
@@ -302,6 +327,11 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
                         targetShapeSquares,
                       );
                     },
+
+                    onLongPress: () {
+                      _debugCompleteTile(context, index, goal);
+                    },
+
                     child: Container(
                       alignment: Alignment.center,
                       padding: const EdgeInsets.all(4),
@@ -403,6 +433,10 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
     int availableActiveMinutes,
     Set<int> targetShapeSquares,
   ) {
+    if (isChallengeFinished) {
+      _showWinnerDialog(winnerName.isEmpty ? 'Someone' : winnerName);
+      return;
+    }
     if (!targetShapeSquares.contains(index)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -488,14 +522,35 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
     }
   }
 
-  void _checkForPatternWin(BuildContext context, String label) {
+  Future<void> _checkForPatternWin(BuildContext context, String label) async {
     final hasCompletedPattern = targetShapeSquares.every(
       (index) => completedSquares.contains(index),
     );
 
     if (hasCompletedPattern) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bingo! You completed the pattern!')),
+      await firestoreService.finishChallenge(challengeId: widget.challengeId);
+
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('🏆 Bingo!'),
+            content: const Text(
+              'You completed the pattern and won the challenge!',
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
+                child: const Text('Back to Games'),
+              ),
+            ],
+          );
+        },
       );
     } else {
       ScaffoldMessenger.of(
@@ -504,10 +559,72 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
     }
   }
 
+  void _showWinnerDialog(String winner) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('🏆 Bingo Finished'),
+          content: Text('$winner won this challenge!'),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showNotEnoughMessage(BuildContext context, String message) {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _debugCompleteTile(
+    BuildContext context,
+    int index,
+    BingoGoal goal,
+  ) async {
+    if (!kDebugMode) return;
+
+    if (isChallengeFinished) {
+      _showWinnerDialog(winnerName.isEmpty ? 'Someone' : winnerName);
+      return;
+    }
+    
+    if (!targetShapeSquares.contains(index)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This tile is not part of the required pattern.'),
+        ),
+      );
+      return;
+    }
+
+    if (completedSquares.contains(index)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This square is already completed.')),
+      );
+      return;
+    }
+
+    setState(() {
+      completedSquares.add(index);
+    });
+
+    await firestoreService.saveBingoCompletedSquares(
+      challengeId: widget.challengeId,
+      completedSquares: completedSquares.toList(),
+    );
+
+    await _loadPlayerProgress();
+
+    await _checkForPatternWin(context, goal.label);
   }
 }
 
