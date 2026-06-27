@@ -308,6 +308,7 @@ class FirestoreService {
     required String type,
     required List<String> playerUids,
     required String title,
+    int? stepGoal,
   }) async {
     final currentUser = FirebaseAuth.instance.currentUser;
 
@@ -332,6 +333,7 @@ class FirestoreService {
       'declinedPlayers': [],
       'createdAt': FieldValue.serverTimestamp(),
       'targetShapeSquares': selectedPattern.toList(),
+      'stepGoal': stepGoal,
     });
   }
 
@@ -616,5 +618,37 @@ class FirestoreService {
     if (!doc.exists) return null;
 
     return {'id': doc.id, ...?doc.data()};
+  }
+
+  Future<Map<String, Map<String, dynamic>>> getChallengePlayerData(
+    String challengeId,
+  ) async {
+    final doc = await _db.collection('challenges').doc(challengeId).get();
+
+    final data = doc.data();
+
+    if (data == null) return {};
+
+    final playerUids = List<String>.from(data['acceptedPlayers'] ?? []);
+
+    final players = <String, Map<String, dynamic>>{};
+
+    for (final uid in playerUids) {
+      final userDoc = await _db.collection('users').doc(uid).get();
+
+      if (!userDoc.exists) continue;
+
+      final user = userDoc.data()!;
+
+      players[uid] = {
+        'name': user['publicName'] ?? 'Unknown',
+        'photoUrl': user['photoUrl'] ?? '',
+        'todaySteps': user['todaySteps'] ?? 0,
+        'todayDistanceMiles': user['todayDistanceMiles'] ?? 0.0,
+        'todayActiveMinutes': user['todayActiveMinutes'] ?? 0,
+      };
+    }
+
+    return players;
   }
 }

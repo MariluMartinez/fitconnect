@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/health_service.dart';
 import 'invite_friends_screen.dart';
 import 'bingo_game_screen.dart';
+import 'step_race_screen.dart';
 import '../services/firestore_service.dart';
 
 class GamesScreen extends StatefulWidget {
@@ -26,21 +27,37 @@ class _GamesScreenState extends State<GamesScreen> {
   final FirestoreService firestoreService = FirestoreService();
   List<Map<String, dynamic>> _currentChallenges = [];
   List<Map<String, dynamic>> _pendingChallenges = [];
+  List<Map<String, dynamic>> _challengeHistory = [];
 
   @override
   void initState() {
     super.initState();
     _loadCurrentChallenges();
     _loadPendingChallenges();
+    _loadChallengeHistory();
   }
 
   Future<void> _loadCurrentChallenges() async {
-    final challenges = await firestoreService.getCurrentChallenges();
+    final allChallenges = await firestoreService.getCurrentChallenges();
 
     if (!mounted) return;
 
     setState(() {
-      _currentChallenges = challenges;
+      _currentChallenges = allChallenges
+          .where((challenge) => challenge['status'] != 'finished')
+          .toList();
+    });
+  }
+
+  Future<void> _loadChallengeHistory() async {
+    final allChallenges = await firestoreService.getCurrentChallenges();
+
+    if (!mounted) return;
+
+    setState(() {
+      _challengeHistory = allChallenges
+          .where((challenge) => challenge['status'] == 'finished')
+          .toList();
     });
   }
 
@@ -317,13 +334,30 @@ class _GamesScreenState extends State<GamesScreen> {
                                     challengeId: challenge['id'],
                                   ),
                                 ),
-                              );
+                              ).then((_) async {
+                                await _loadCurrentChallenges();
+                                await _loadChallengeHistory();
+                              });
+                            } else if (type == 'step_race') {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => StepRaceScreen(
+                                    challengeId: challenge['id'],
+                                    snapshot: widget.snapshot,
+                                  ),
+                                ),
+                              ).then((_) async {
+                                await _loadCurrentChallenges();
+                                await _loadChallengeHistory();
+                              });
                             }
                           },
                         );
                       }).toList(),
               ),
             ),
+
             const SizedBox(height: 32),
 
             const Text(
@@ -381,6 +415,59 @@ class _GamesScreenState extends State<GamesScreen> {
                     icon: Icons.local_fire_department,
                   ),
                 ],
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
+            const Text(
+              'Challenge History',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 16),
+
+            SizedBox(
+              height: 205,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: _challengeHistory.isEmpty
+                    ? [
+                        const _GroupChallengeCard(
+                          title: 'No Completed Challenges',
+                          subtitle: 'Finish a challenge',
+                          progressText: 'History will appear here',
+                          icon: Icons.history,
+                        ),
+                      ]
+                    : _challengeHistory.map((challenge) {
+                        final type = challenge['type'] ?? 'Challenge';
+                        final title = challenge['title'] ?? type;
+                        final winner = challenge['winnerName'] ?? 'Unknown';
+
+                        IconData icon;
+
+                        switch (type) {
+                          case 'bingo':
+                            icon = Icons.grid_view;
+                            break;
+                          case 'step_race':
+                            icon = Icons.emoji_events;
+                            break;
+                          case 'distance':
+                            icon = Icons.map;
+                            break;
+                          default:
+                            icon = Icons.flag;
+                        }
+
+                        return _GroupChallengeCard(
+                          title: title,
+                          subtitle: 'Completed',
+                          progressText: '🏆 $winner',
+                          icon: icon,
+                        );
+                      }).toList(),
               ),
             ),
           ],
@@ -478,6 +565,7 @@ class _GamesScreenState extends State<GamesScreen> {
 
     final selectedFriends = <String>{};
     final titleController = TextEditingController();
+    final goalController = TextEditingController(text: '10000');
 
     await showDialog(
       context: context,
@@ -499,6 +587,20 @@ class _GamesScreenState extends State<GamesScreen> {
                         border: OutlineInputBorder(),
                       ),
                     ),
+
+                    if (type == 'step_race') ...[
+                      const SizedBox(height: 12),
+
+                      TextField(
+                        controller: goalController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Step Goal',
+                          hintText: '10000',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ],
 
                     const SizedBox(height: 12),
 
@@ -537,12 +639,18 @@ class _GamesScreenState extends State<GamesScreen> {
                       : () async {
                           final typedTitle = titleController.text.trim();
 
+                          final stepGoal =
+                              int.tryParse(goalController.text.trim()) ?? 10000;
+
                           await firestoreService.createChallenge(
                             type: type,
                             playerUids: selectedFriends.toList(),
                             title: typedTitle.isEmpty
-                                ? 'Bingo Challenge'
+                                ? type == 'step_race'
+                                      ? 'Step Race'
+                                      : 'Bingo Challenge'
                                 : typedTitle,
+                            stepGoal: type == 'step_race' ? stepGoal : null,
                           );
 
                           await _loadCurrentChallenges();
