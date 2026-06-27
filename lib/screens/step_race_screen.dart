@@ -181,7 +181,7 @@ class _StepRaceTrack extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        const avatarRadius = 32.0;
+        const avatarRadius = 24.0;
         const labelWidth = 72.0;
         const rightLabelWidth = 36.0;
 
@@ -238,49 +238,49 @@ class _StepRaceTrack extends StatelessWidget {
               // right-side percent labels
               for (final percent in [0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
                 Positioned(
-                  right: 0,
-                  top: laneBottom - (laneHeight * percent) - 10,
+                  right: 5,
+                  top: laneBottom - (laneHeight * percent) - 8,
                   width: rightLabelWidth,
                   child: Text(
                     '${(percent * 100).round()}%',
                     textAlign: TextAlign.right,
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 10),
                   ),
                 ),
 
               // FINISH label + line
               Positioned(
-                left: 0,
-                top: finishY - 14,
+                left: 8,
+                top: finishY - 12,
                 width: labelWidth,
                 child: const Text(
                   'FINISH',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
               ),
 
               Positioned(
                 left: trackLeft,
-                right: rightLabelWidth,
-                top: finishY,
+                right: rightLabelWidth + 5,
+                top: finishY - 8,
                 child: const Divider(thickness: 2, color: Colors.black87),
               ),
 
               // START label + line
               Positioned(
-                left: 0,
+                left: 8,
                 top: startY - 14,
                 width: labelWidth,
                 child: const Text(
                   'START',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
               ),
 
               Positioned(
                 left: trackLeft,
-                right: rightLabelWidth,
-                top: startY,
+                right: rightLabelWidth + 5,
+                top: startY - 8,
                 child: const Divider(thickness: 2, color: Colors.black87),
               ),
 
@@ -346,14 +346,14 @@ class _StepRaceTrack extends StatelessWidget {
                             ? const Color(0xFFFFD700)
                             : Colors.grey.shade200,
                         child: CircleAvatar(
-                          radius: 27,
+                          radius: 20,
                           backgroundImage: photoUrl.isNotEmpty
                               ? NetworkImage(photoUrl)
                               : null,
                           child: photoUrl.isEmpty
                               ? Text(
                                   name.isNotEmpty ? name[0].toUpperCase() : '?',
-                                  style: const TextStyle(fontSize: 22),
+                                  style: const TextStyle(fontSize: 12),
                                 )
                               : null,
                         ),
