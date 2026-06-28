@@ -98,6 +98,8 @@ class _StepRaceScreenState extends State<StepRaceScreen> {
     setState(() {
       playerData = data;
     });
+
+    _checkForStepRaceWinner();
   }
 
   String? _getLeaderUid() {
@@ -118,10 +120,69 @@ class _StepRaceScreenState extends State<StepRaceScreen> {
     return leaderUid;
   }
 
+  void _showWinnerDialog(String winnerName, int winnerSteps, String winnerUid) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('🏆 Challenge Complete!'),
+          content: Text(
+            '$winnerName won $title!\n\n'
+            'Goal: ${_formatNumber(stepGoal)} steps\n'
+            '$winnerName: ${_formatNumber(winnerSteps)} steps',
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () async {
+                await firestoreService.finishChallenge(
+                  challengeId: widget.challengeId,
+                );
+
+                if (!mounted) return;
+
+                Navigator.pop(context); // close dialog
+
+                Navigator.pop(context); // go back to Challenges
+              },
+              child: const Text('Awesome!'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _checkForStepRaceWinner() {
+    for (final entry in playerData.entries) {
+      final uid = entry.key;
+      final data = entry.value;
+
+      final steps = data['todaySteps'] ?? 0;
+
+      if (steps >= stepGoal) {
+        final name = data['name'] ?? playerNames[uid] ?? 'Someone';
+
+        _showWinnerDialog(name, steps, uid);
+        return;
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(
+        title: Text(title),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh Race',
+            onPressed: () async {
+              await _loadPlayerData();
+            },
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -130,7 +191,7 @@ class _StepRaceScreenState extends State<StepRaceScreen> {
 
             Center(
               child: Text(
-                'Goal: $stepGoal steps',
+                'Goal: ${_formatNumber(stepGoal)} steps',
                 style: const TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w600,
@@ -307,7 +368,9 @@ class _StepRaceTrack extends StatelessWidget {
                     ? trackLeft + trackWidth / 2
                     : trackLeft + laneSpacing * index + laneSpacing / 2;
 
-                final avatarCenterY = laneBottom - (laneHeight * progress);
+                final avatarCenterY = hasFinished
+                    ? laneTop
+                    : laneBottom - (laneHeight * progress);
 
                 return Stack(
                   clipBehavior: Clip.none,
@@ -333,11 +396,48 @@ class _StepRaceTrack extends StatelessWidget {
                       Positioned(
                         left: laneX - 18,
                         top: avatarCenterY - avatarRadius - 48,
-                        child: const Text('🏆', style: TextStyle(fontSize: 34)),
+                        child: const Text('🏆', style: TextStyle(fontSize: 28)),
+                      ),
+
+                    // step bubble
+                    // step bubble
+                    if (steps > 0 && !hasFinished)
+                      Positioned(
+                        left: laneX - 30,
+                        top: avatarCenterY - avatarRadius - 26,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isLeader
+                                ? Colors.amber.shade50
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isLeader
+                                  ? const Color(0xFFFFD700)
+                                  : Colors.grey.shade300,
+                            ),
+                          ),
+                          child: Text(
+                            _formatNumber(steps),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: isLeader
+                                  ? Colors.orange.shade700
+                                  : Colors.grey.shade700,
+                            ),
+                          ),
+                        ),
                       ),
 
                     // avatar
-                    Positioned(
+                    AnimatedPositioned(
+                      duration: const Duration(milliseconds: 900),
+                      curve: Curves.easeOutCubic,
                       left: laneX - avatarRadius,
                       top: avatarCenterY - avatarRadius,
                       child: CircleAvatar(
@@ -360,29 +460,13 @@ class _StepRaceTrack extends StatelessWidget {
                       ),
                     ),
 
-                    // name
-                    Positioned(
-                      left: laneX - 65,
-                      top: startY + 72,
-                      width: 130,
-                      child: Text(
-                        name,
-                        textAlign: TextAlign.center,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-
                     // steps
                     Positioned(
                       left: laneX - 65,
-                      top: startY + 96,
+                      top: startY + 30,
                       width: 130,
                       child: Text(
-                        '$steps / $stepGoal',
+                        '${_formatNumber(steps)} / ${_formatNumber(stepGoal)}',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           color: Colors.grey,
@@ -399,4 +483,11 @@ class _StepRaceTrack extends StatelessWidget {
       },
     );
   }
+}
+
+String _formatNumber(num value) {
+  return value.toInt().toString().replaceAllMapped(
+    RegExp(r'\B(?=(\d{3})+(?!\d))'),
+    (match) => ',',
+  );
 }

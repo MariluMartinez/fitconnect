@@ -600,6 +600,13 @@ class _GamesScreenState extends State<GamesScreen> {
                           border: OutlineInputBorder(),
                         ),
                       ),
+
+                      const SizedBox(height: 8),
+
+                      const Text(
+                        'Step Race supports 2–4 total players. Invite 1–3 friends.',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
                     ],
 
                     const SizedBox(height: 12),
@@ -634,7 +641,9 @@ class _GamesScreenState extends State<GamesScreen> {
                   child: const Text('Cancel'),
                 ),
                 ElevatedButton(
-                  onPressed: selectedFriends.isEmpty
+                  onPressed:
+                      selectedFriends.isEmpty ||
+                          (type == 'step_race' && selectedFriends.length > 3)
                       ? null
                       : () async {
                           final typedTitle = titleController.text.trim();
