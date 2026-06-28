@@ -309,6 +309,7 @@ class FirestoreService {
     required List<String> playerUids,
     required String title,
     int? stepGoal,
+    double? distanceGoal,
   }) async {
     final currentUser = FirebaseAuth.instance.currentUser;
 
@@ -334,6 +335,7 @@ class FirestoreService {
       'createdAt': FieldValue.serverTimestamp(),
       'targetShapeSquares': selectedPattern.toList(),
       'stepGoal': stepGoal,
+      'distanceGoal': distanceGoal,
     });
   }
 

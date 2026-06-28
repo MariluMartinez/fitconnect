@@ -3,6 +3,7 @@ import '../services/health_service.dart';
 import 'invite_friends_screen.dart';
 import 'bingo_game_screen.dart';
 import 'step_race_screen.dart';
+import 'distance_race_screen.dart';
 import '../services/firestore_service.dart';
 
 class GamesScreen extends StatefulWidget {
@@ -244,7 +245,7 @@ class _GamesScreenState extends State<GamesScreen> {
                       icon = Icons.grid_view;
                     } else if (type == 'step_race') {
                       icon = Icons.emoji_events;
-                    } else if (type == 'distance') {
+                    } else if (type == 'distance_race') {
                       icon = Icons.map;
                     } else {
                       icon = Icons.flag_outlined;
@@ -351,6 +352,16 @@ class _GamesScreenState extends State<GamesScreen> {
                                 await _loadCurrentChallenges();
                                 await _loadChallengeHistory();
                               });
+                            } else if (challenge['type'] == 'distance_race') {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => DistanceRaceScreen(
+                                    challengeId: challenge['id'],
+                                    snapshot: widget.snapshot,
+                                  ),
+                                ),
+                              );
                             }
                           },
                         );
@@ -404,7 +415,7 @@ class _GamesScreenState extends State<GamesScreen> {
                     progressText: 'Invite friends',
                     icon: Icons.map,
                     onTap: () {
-                      _createQuickChallenge(context, 'distance');
+                      _createQuickChallenge(context, 'distance_race');
                     },
                   ),
 
@@ -454,7 +465,7 @@ class _GamesScreenState extends State<GamesScreen> {
                           case 'step_race':
                             icon = Icons.emoji_events;
                             break;
-                          case 'distance':
+                          case 'distance_race':
                             icon = Icons.map;
                             break;
                           default:
@@ -565,7 +576,9 @@ class _GamesScreenState extends State<GamesScreen> {
 
     final selectedFriends = <String>{};
     final titleController = TextEditingController();
-    final goalController = TextEditingController(text: '10000');
+
+    final stepGoalController = TextEditingController(text: '10000');
+    final distanceGoalController = TextEditingController(text: '5.0');
 
     await showDialog(
       context: context,
@@ -592,7 +605,7 @@ class _GamesScreenState extends State<GamesScreen> {
                       const SizedBox(height: 12),
 
                       TextField(
-                        controller: goalController,
+                        controller: stepGoalController,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
                           labelText: 'Step Goal',
@@ -605,6 +618,29 @@ class _GamesScreenState extends State<GamesScreen> {
 
                       const Text(
                         'Step Race supports 2–4 total players. Invite 1–3 friends.',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                    ],
+
+                    if (type == 'distance_race') ...[
+                      const SizedBox(height: 12),
+
+                      TextField(
+                        controller: distanceGoalController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: 'Distance Goal (miles)',
+                          hintText: '5.0',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      const Text(
+                        'Distance Race supports 2–4 total players. Invite 1–3 friends.',
                         style: TextStyle(fontSize: 12, color: Colors.grey),
                       ),
                     ],
@@ -643,13 +679,21 @@ class _GamesScreenState extends State<GamesScreen> {
                 ElevatedButton(
                   onPressed:
                       selectedFriends.isEmpty ||
-                          (type == 'step_race' && selectedFriends.length > 3)
+                          ((type == 'step_race' || type == 'distance_race') &&
+                              selectedFriends.length > 3)
                       ? null
                       : () async {
                           final typedTitle = titleController.text.trim();
 
                           final stepGoal =
-                              int.tryParse(goalController.text.trim()) ?? 10000;
+                              int.tryParse(stepGoalController.text.trim()) ??
+                              10000;
+
+                          final distanceGoal =
+                              double.tryParse(
+                                distanceGoalController.text.trim(),
+                              ) ??
+                              5.0;
 
                           await firestoreService.createChallenge(
                             type: type,
@@ -657,9 +701,14 @@ class _GamesScreenState extends State<GamesScreen> {
                             title: typedTitle.isEmpty
                                 ? type == 'step_race'
                                       ? 'Step Race'
+                                      : type == 'distance_race'
+                                      ? 'Distance Race'
                                       : 'Bingo Challenge'
                                 : typedTitle,
                             stepGoal: type == 'step_race' ? stepGoal : null,
+                            distanceGoal: type == 'distance_race'
+                                ? distanceGoal
+                                : null,
                           );
 
                           await _loadCurrentChallenges();
