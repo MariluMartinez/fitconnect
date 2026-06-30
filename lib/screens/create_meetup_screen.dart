@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_google_places_sdk/flutter_google_places_sdk.dart';
 import '../models/event_model.dart';
 import '../services/event_service.dart';
+import '../services/google_places_service.dart';
 
 class CreateMeetupScreen extends StatefulWidget {
   const CreateMeetupScreen({super.key});
@@ -15,12 +17,15 @@ class _CreateMeetupScreenState extends State<CreateMeetupScreen> {
   final _locationController = TextEditingController();
   final _cityController = TextEditingController();
   final _stateController = TextEditingController();
+  final EventService _eventService = EventService();
+  final GooglePlacesService _placesService = GooglePlacesService();
 
   String _selectedEventType = 'Walk';
-  final EventService _eventService = EventService();
 
   bool _isSaving = false;
   DateTime? _selectedDateTime;
+
+  List<AutocompletePrediction> _predictions = [];
 
   Future<void> _pickDateTime() async {
     final date = await showDatePicker(
@@ -114,10 +119,54 @@ class _CreateMeetupScreenState extends State<CreateMeetupScreen> {
             TextField(
               controller: _locationController,
               decoration: const InputDecoration(
-                labelText: 'Location',
+                labelText: 'Search location',
+                hintText: 'Example: Ventura Pier',
+                prefixIcon: Icon(Icons.search),
                 border: OutlineInputBorder(),
               ),
+              onChanged: (value) async {
+                final results = await _placesService.searchPlaces(value);
+
+                if (!mounted) return;
+
+                setState(() {
+                  _predictions = results;
+                });
+              },
             ),
+
+            if (_predictions.isNotEmpty) ...[
+              const SizedBox(height: 8),
+
+              Container(
+                constraints: const BoxConstraints(maxHeight: 180),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _predictions.length,
+                  itemBuilder: (context, index) {
+                    final prediction = _predictions[index];
+
+                    return ListTile(
+                      leading: const Icon(Icons.location_on_outlined),
+                      title: Text(prediction.primaryText ?? ''),
+                      subtitle: Text(prediction.secondaryText ?? ''),
+                      onTap: () {
+                        setState(() {
+                          _locationController.text =
+                              prediction.primaryText ?? '';
+                          _predictions = [];
+                        });
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+
             const SizedBox(height: 16),
 
             TextField(

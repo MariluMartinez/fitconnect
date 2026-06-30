@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>752567322079-ea5787am04bvg5h9viujltha92i8mv0c.apps.googleusercontent.com</string>
+	<string>752567322079-l4dcuru9847tkt4anb6r2ofgdipg0h17.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.752567322079-ea5787am04bvg5h9viujltha92i8mv0c</string>
+	<string>com.googleusercontent.apps.752567322079-l4dcuru9847tkt4anb6r2ofgdipg0h17</string>
 	<key>ANDROID_CLIENT_ID</key>
 	<string>752567322079-ifipsc0ra784pgcqk5kgohbpred2pepk.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
@@ -15,7 +15,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.fitconnect</string>
+	<string>com.fitconnectofficial.app</string>
 	<key>PROJECT_ID</key>
 	<string>fitconnect-2ba3f</string>
 	<key>STORAGE_BUCKET</key>
@@ -31,6 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:752567322079:ios:bdbc8f9baf4a4b6ad2706a</string>
+	<string>1:752567322079:ios:0d1425c41e37b95dd2706a</string>
 </dict>
 </plist>

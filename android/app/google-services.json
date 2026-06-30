@@ -37,6 +37,57 @@
             {
               "client_id": "752567322079-aq9bbscq9j75ef0mnm2qdmq5iqr7j4jd.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "752567322079-ea5787am04bvg5h9viujltha92i8mv0c.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.fitconnect"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:752567322079:android:eb52c7dbc3d32c6cd2706a",
+        "android_client_info": {
+          "package_name": "com.fitconnectofficial.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "752567322079-oji3hsdhbbtf1d70bmlhavcjbl7ronup.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.fitconnectofficial.app",
+            "certificate_hash": "5c77b0e1295f6f81d2d13db00c9c88bc8d26ae42"
+          }
+        },
+        {
+          "client_id": "752567322079-aq9bbscq9j75ef0mnm2qdmq5iqr7j4jd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAubgWIyh5GS1gX6yrxsdvL2C3rATHtXbU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "752567322079-aq9bbscq9j75ef0mnm2qdmq5iqr7j4jd.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "752567322079-ea5787am04bvg5h9viujltha92i8mv0c.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.fitconnect"
+              }
             }
           ]
         }
