@@ -4,7 +4,10 @@ class Event {
   final String location;
   final String city;
   final String state; 
+  final double latitude;
+  final double longitude;
   final String eventType;
+  final String difficulty; 
   final DateTime dateTime;
   final String createdBy;
   final List<String> participants;
@@ -15,7 +18,10 @@ class Event {
     required this.location,
     required this.city,
     required this.state,
+    required this.latitude,
+    required this.longitude,
     required this.eventType,
+    required this.difficulty,
     required this.dateTime,
     required this.createdBy,
     required this.participants,
@@ -28,7 +34,10 @@ class Event {
       location: data['location'] ?? '',
       city: data['city'] ?? '',
       state: data['state'] ?? '',
+      latitude: (data['latitude'] ?? 0).toDouble(),
+      longitude: (data['longitude'] ?? 0).toDouble(),
       eventType: data['eventType'] ?? 'General',
+      difficulty: data['difficulty'] ??  'Any Level', 
       dateTime: DateTime.parse(data['dateTime']),
       createdBy: data['createdBy'] ?? '',
       participants: List<String>.from(data['participants'] ?? []),
@@ -41,7 +50,10 @@ class Event {
       'location': location,
       'city': city,
       'state': state,
+      'latitude': latitude,
+      'longitude': longitude,
       'eventType': eventType,
+      'difficulty': difficulty,
       'dateTime': dateTime.toIso8601String(),
       'createdBy': createdBy,
       'participants': participants,

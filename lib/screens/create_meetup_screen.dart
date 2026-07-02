@@ -22,6 +22,11 @@ class _CreateMeetupScreenState extends State<CreateMeetupScreen> {
 
   String _selectedEventType = 'Walk';
 
+  double _selectedLatitude = 0.0;
+  double _selectedLongitude = 0.0;
+
+  String _selectedDifficulty = 'Any Level';
+
   bool _isSaving = false;
   DateTime? _selectedDateTime;
 
@@ -79,9 +84,12 @@ class _CreateMeetupScreenState extends State<CreateMeetupScreen> {
       city: _cityController.text.trim(),
       state: _stateController.text.trim().toUpperCase(),
       eventType: _selectedEventType,
+      difficulty: _selectedDifficulty,
       dateTime: _selectedDateTime!,
       createdBy: user.uid,
       participants: [user.uid],
+      latitude: _selectedLatitude,
+      longitude: _selectedLongitude,
     );
 
     await _eventService.createEvent(event);
@@ -154,10 +162,23 @@ class _CreateMeetupScreenState extends State<CreateMeetupScreen> {
                       leading: const Icon(Icons.location_on_outlined),
                       title: Text(prediction.primaryText ?? ''),
                       subtitle: Text(prediction.secondaryText ?? ''),
-                      onTap: () {
+                      onTap: () async {
+                        final placeId = prediction.placeId;
+
+                        if (placeId == null) return;
+
+                        final details = await _placesService.getPlaceDetails(
+                          placeId,
+                        );
+
+                        if (!mounted || details == null) return;
+
                         setState(() {
-                          _locationController.text =
-                              prediction.primaryText ?? '';
+                          _locationController.text = details.name;
+                          _cityController.text = details.city;
+                          _stateController.text = details.state;
+                          _selectedLatitude = details.latitude;
+                          _selectedLongitude = details.longitude;
                           _predictions = [];
                         });
                       },
@@ -202,6 +223,8 @@ class _CreateMeetupScreenState extends State<CreateMeetupScreen> {
                 DropdownMenuItem(value: 'Run', child: Text('Run')),
                 DropdownMenuItem(value: 'Hike', child: Text('Hike')),
                 DropdownMenuItem(value: 'Gym', child: Text('Gym')),
+                DropdownMenuItem(value: 'Yoga', child: Text('Yoga')),
+                DropdownMenuItem(value: 'Sports', child: Text('Sports')),
                 DropdownMenuItem(value: 'Social', child: Text('Social')),
               ],
               onChanged: (value) {
@@ -212,7 +235,38 @@ class _CreateMeetupScreenState extends State<CreateMeetupScreen> {
                 });
               },
             ),
+
             const SizedBox(height: 16),
+
+            DropdownButtonFormField<String>(
+              value: _selectedDifficulty,
+              decoration: const InputDecoration(
+                labelText: 'Difficulty',
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(
+                  value: 'Any Level',
+                  child: Text('🔵 Any Level'),
+                ),
+                DropdownMenuItem(value: 'Beginner', child: Text('🟢 Beginner')),
+                DropdownMenuItem(
+                  value: 'Intermediate',
+                  child: Text('🟡 Intermediate'),
+                ),
+                DropdownMenuItem(value: 'Advanced', child: Text('🔴 Advanced')),
+              ],
+              onChanged: (value) {
+                if (value == null) return;
+
+                setState(() {
+                  _selectedDifficulty = value;
+                });
+              },
+            ),
+            
+            const SizedBox(height: 16),
+
             OutlinedButton.icon(
               onPressed: _pickDateTime,
               icon: const Icon(Icons.calendar_today_outlined),

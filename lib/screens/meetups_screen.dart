@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/event_model.dart';
 import '../services/event_service.dart';
+import '../utils/difficulty_utils.dart';
 import 'create_meetup_screen.dart';
+import 'meetup_details_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 
 class MeetupsScreen extends StatefulWidget {
@@ -18,11 +21,26 @@ class _MeetupsScreenState extends State<MeetupsScreen> {
   final _searchAreaController = TextEditingController();
   String _selectedType = 'All';
   int _selectedRadius = 25;
+  String _selectedDifficulty = 'Any Level';
 
   @override
   void dispose() {
     _searchAreaController.dispose();
     super.dispose();
+  }
+
+  Future<void> _openDirections(Event event) async {
+    final uri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=${event.latitude},${event.longitude}',
+    );
+
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open Google Maps')),
+      );
+    }
   }
 
   @override
@@ -56,7 +74,11 @@ class _MeetupsScreenState extends State<MeetupsScreen> {
             final typeMatch =
                 _selectedType == 'All' || event.eventType == _selectedType;
 
-            return areaMatch && typeMatch;
+            final difficultyMatch =
+                _selectedDifficulty == 'Any Level' ||
+                event.difficulty == _selectedDifficulty;
+
+            return areaMatch && typeMatch && difficultyMatch;
           }).toList();
 
           return Column(
@@ -111,6 +133,14 @@ class _MeetupsScreenState extends State<MeetupsScreen> {
                                 child: Text('Gym'),
                               ),
                               DropdownMenuItem(
+                                value: 'Yoga',
+                                child: Text('Yoga'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Sports',
+                                child: Text('Sports'),
+                              ),
+                              DropdownMenuItem(
                                 value: 'Social',
                                 child: Text('Social'),
                               ),
@@ -122,9 +152,7 @@ class _MeetupsScreenState extends State<MeetupsScreen> {
                             },
                           ),
                         ),
-
                         const SizedBox(width: 12),
-
                         Expanded(
                           child: DropdownButtonFormField<int>(
                             value: _selectedRadius,
@@ -151,6 +179,39 @@ class _MeetupsScreenState extends State<MeetupsScreen> {
                         ),
                       ],
                     ),
+
+                    const SizedBox(height: 12),
+
+                    DropdownButtonFormField<String>(
+                      value: _selectedDifficulty,
+                      decoration: const InputDecoration(
+                        labelText: 'Difficulty',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'Any Level',
+                          child: Text('Any Level'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Beginner',
+                          child: Text('Beginner'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Intermediate',
+                          child: Text('Intermediate'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Advanced',
+                          child: Text('Advanced'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedDifficulty = value!;
+                        });
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -167,110 +228,154 @@ class _MeetupsScreenState extends State<MeetupsScreen> {
 
                           return Card(
                             margin: const EdgeInsets.only(bottom: 12),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    event.title,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        MeetupDetailsScreen(event: event),
                                   ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.location_on_outlined,
-                                        size: 18,
+                                );
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      event.title,
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                      const SizedBox(width: 6),
-                                      Expanded(
-                                        child: Text(
-                                          '${event.location}\n${event.city}, ${event.state}',
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.location_on_outlined,
+                                          size: 18,
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.category_outlined,
-                                        size: 18,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(event.eventType),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.calendar_today_outlined,
-                                        size: 18,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        DateFormat(
-                                          'MMM d, y • h:mm a',
-                                        ).format(event.dateTime),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.people_outline,
-                                        size: 18,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        '${event.participants.length} participant(s)',
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: ElevatedButton(
-                                      onPressed: () async {
-                                        final user =
-                                            FirebaseAuth.instance.currentUser;
-
-                                        if (user == null) return;
-
-                                        final alreadyJoined = event.participants
-                                            .contains(user.uid);
-
-                                        if (alreadyJoined) {
-                                          await _eventService.leaveEvent(
-                                            event.id,
-                                            user.uid,
-                                          );
-                                        } else {
-                                          await _eventService.joinEvent(
-                                            event.id,
-                                            user.uid,
-                                          );
-                                        }
-                                      },
-                                      child: Text(
-                                        event.participants.contains(
-                                              FirebaseAuth
-                                                  .instance
-                                                  .currentUser
-                                                  ?.uid,
-                                            )
-                                            ? 'Leave'
-                                            : 'Join',
-                                      ),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            '${event.location}\n${event.city}, ${event.state}',
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(height: 6),
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.category_outlined,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(event.eventType),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+
+                                    Row(
+                                      children: [
+                                        difficultyDot(
+                                          event.difficulty,
+                                          size: 14,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(event.difficulty),
+                                      ],
+                                    ),
+
+                                    const SizedBox(height: 6),
+
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.calendar_today_outlined,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          DateFormat(
+                                            'MMM d, y • h:mm a',
+                                          ).format(event.dateTime),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.people_outline,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          '${event.participants.length} participant(s)',
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        OutlinedButton.icon(
+                                          onPressed:
+                                              event.latitude == 0 &&
+                                                  event.longitude == 0
+                                              ? null
+                                              : () {
+                                                  _openDirections(event);
+                                                },
+                                          icon: const Icon(
+                                            Icons.directions_outlined,
+                                          ),
+                                          label: const Text('Directions'),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        ElevatedButton(
+                                          onPressed: () async {
+                                            final user = FirebaseAuth
+                                                .instance
+                                                .currentUser;
+
+                                            if (user == null) return;
+
+                                            final alreadyJoined = event
+                                                .participants
+                                                .contains(user.uid);
+
+                                            if (alreadyJoined) {
+                                              await _eventService.leaveEvent(
+                                                event.id,
+                                                user.uid,
+                                              );
+                                            } else {
+                                              await _eventService.joinEvent(
+                                                event.id,
+                                                user.uid,
+                                              );
+                                            }
+                                          },
+                                          child: Text(
+                                            event.participants.contains(
+                                                  FirebaseAuth
+                                                      .instance
+                                                      .currentUser
+                                                      ?.uid,
+                                                )
+                                                ? 'Leave'
+                                                : 'Join',
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           );
