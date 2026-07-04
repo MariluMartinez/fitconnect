@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/event_model.dart';
 import '../services/event_service.dart';
 import '../services/notifications_service.dart';
+import '../services/google_places_service.dart';
 import '../utils/difficulty_utils.dart';
 import 'create_meetup_screen.dart';
 import 'meetup_details_screen.dart';
@@ -9,6 +10,7 @@ import 'my_meetups_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
+import 'dart:math';
 
 class MeetupsScreen extends StatefulWidget {
   const MeetupsScreen({super.key});
@@ -21,9 +23,15 @@ class _MeetupsScreenState extends State<MeetupsScreen> {
   final EventService _eventService = EventService();
 
   final _searchAreaController = TextEditingController();
+
+  final GooglePlacesService _googlePlacesService = GooglePlacesService();
+
   String _selectedType = 'All';
   int _selectedRadius = 25;
   String _selectedDifficulty = 'Any Level';
+
+  double? _searchLatitude;
+  double? _searchLongitude;
 
   @override
   void dispose() {
@@ -43,6 +51,28 @@ class _MeetupsScreenState extends State<MeetupsScreen> {
         const SnackBar(content: Text('Could not open Google Maps')),
       );
     }
+  }
+
+  double _distanceInMiles(double lat1, double lon1, double lat2, double lon2) {
+    const earthRadiusMiles = 3958.8;
+
+    final dLat = _degreesToRadians(lat2 - lat1);
+    final dLon = _degreesToRadians(lon2 - lon1);
+
+    final a =
+        sin(dLat / 2) * sin(dLat / 2) +
+        cos(_degreesToRadians(lat1)) *
+            cos(_degreesToRadians(lat2)) *
+            sin(dLon / 2) *
+            sin(dLon / 2);
+
+    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+
+    return earthRadiusMiles * c;
+  }
+
+  double _degreesToRadians(double degrees) {
+    return degrees * pi / 180;
   }
 
   @override
@@ -83,11 +113,30 @@ class _MeetupsScreenState extends State<MeetupsScreen> {
           final search = _searchAreaController.text.trim().toLowerCase();
 
           final filteredEvents = events.where((event) {
-            final areaMatch =
-                search.isEmpty ||
-                event.city.toLowerCase().contains(search) ||
-                event.state.toLowerCase().contains(search) ||
-                '${event.city}, ${event.state}'.toLowerCase().contains(search);
+            bool areaMatch = true;
+
+            if (search.isNotEmpty) {
+              if (_searchLatitude != null &&
+                  _searchLongitude != null &&
+                  event.latitude != 0 &&
+                  event.longitude != 0) {
+                final distance = _distanceInMiles(
+                  _searchLatitude!,
+                  _searchLongitude!,
+                  event.latitude,
+                  event.longitude,
+                );
+
+                areaMatch = distance <= _selectedRadius;
+              } else {
+                areaMatch =
+                    event.city.toLowerCase().contains(search) ||
+                    event.state.toLowerCase().contains(search) ||
+                    '${event.city}, ${event.state}'.toLowerCase().contains(
+                      search,
+                    );
+              }
+            }
 
             final typeMatch =
                 _selectedType == 'All' || event.eventType == _selectedType;
@@ -113,9 +162,36 @@ class _MeetupsScreenState extends State<MeetupsScreen> {
                         prefixIcon: Icon(Icons.search),
                         border: OutlineInputBorder(),
                       ),
-                      onChanged: (_) {
-                        setState(() {});
+                    ),
+                    const SizedBox(height: 8),
+
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final value = _searchAreaController.text.trim();
+
+                        if (value.isEmpty) return;
+
+                        final results = await _googlePlacesService.searchPlaces(
+                          value,
+                        );
+
+                        if (!mounted || results.isEmpty) return;
+
+                        final placeId = results.first.placeId;
+                        if (placeId == null) return;
+
+                        final details = await _googlePlacesService
+                            .getPlaceDetails(placeId);
+
+                        if (!mounted || details == null) return;
+
+                        setState(() {
+                          _searchLatitude = details.latitude;
+                          _searchLongitude = details.longitude;
+                        });
                       },
+                      icon: const Icon(Icons.search),
+                      label: const Text('Apply Area Filter'),
                     ),
 
                     const SizedBox(height: 12),
