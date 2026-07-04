@@ -7,6 +7,7 @@ import '../models/event_model.dart';
 import '../services/event_service.dart';
 import '../services/notifications_service.dart';
 import 'create_meetup_screen.dart';
+import 'meetup_participants_screen.dart';
 
 class MeetupDetailsScreen extends StatelessWidget {
   final Event event;
@@ -58,6 +59,17 @@ class MeetupDetailsScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.people),
             title: Text("${event.participants.length} participant(s)"),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => MeetupParticipantsScreen(
+                    participantIds: event.participants,
+                  ),
+                ),
+              );
+            },
           ),
           if (event.description.trim().isNotEmpty) ...[
             const SizedBox(height: 12),

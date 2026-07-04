@@ -1,3 +1,17 @@
+const List<String> bingoPatternNames = [
+  'X',
+  'Plus',
+  'Diamond',
+  'T',
+  'U',
+  'Arrow',
+  'Heart',
+  'Lightning Bolt',
+  'Crown',
+  'Shield',
+  'Hourglass',
+  'Spiral',
+];
 const List<Set<int>> bingoPatterns = [
   // X - 9 tiles
   {0, 4, 6, 8, 12, 16, 18, 20, 24},

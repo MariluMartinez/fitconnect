@@ -418,13 +418,6 @@ class _GamesScreenState extends State<GamesScreen> {
                       _createQuickChallenge(context, 'distance_race');
                     },
                   ),
-
-                  _GroupChallengeCard(
-                    title: 'Active Minutes',
-                    subtitle: 'Most active minutes',
-                    progressText: 'Invite friends',
-                    icon: Icons.local_fire_department,
-                  ),
                 ],
               ),
             ),
@@ -488,12 +481,14 @@ class _GamesScreenState extends State<GamesScreen> {
   }
 
   void _showCreateChallengePopup(BuildContext context) {
+    final parentContext = context;
+
     showModalBottomSheet(
-      context: context,
+      context: parentContext,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
       ),
-      builder: (context) {
+      builder: (sheetContext) {
         return Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -512,10 +507,10 @@ class _GamesScreenState extends State<GamesScreen> {
                 subtitle: 'Complete fitness squares before your friends.',
                 icon: Icons.grid_view,
                 onTap: () {
-                  Navigator.pop(context);
+                  Navigator.pop(sheetContext);
 
                   Navigator.push(
-                    context,
+                    parentContext,
                     MaterialPageRoute(
                       builder: (_) => InviteFriendsScreen(
                         challengeName: 'Bingo',
@@ -531,7 +526,8 @@ class _GamesScreenState extends State<GamesScreen> {
                 subtitle: 'Compete to get the most steps.',
                 icon: Icons.directions_run,
                 onTap: () {
-                  Navigator.pop(context);
+                  Navigator.pop(sheetContext);
+                  _createQuickChallenge(parentContext, 'step_race');
                 },
               ),
 
@@ -540,16 +536,8 @@ class _GamesScreenState extends State<GamesScreen> {
                 subtitle: 'See who can go the farthest.',
                 icon: Icons.map,
                 onTap: () {
-                  Navigator.pop(context);
-                },
-              ),
-
-              _ChallengeOption(
-                title: 'Active Minutes',
-                subtitle: 'Compete for the most active minutes.',
-                icon: Icons.local_fire_department,
-                onTap: () {
-                  Navigator.pop(context);
+                  Navigator.pop(sheetContext);
+                  _createQuickChallenge(parentContext, 'distance_race');
                 },
               ),
             ],

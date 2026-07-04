@@ -27,6 +27,7 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
   int usedSteps = 0;
   double usedDistance = 0.0;
   int usedActiveMinutes = 0;
+  String patternName = 'Bingo Pattern';
 
   final FirestoreService firestoreService = FirestoreService();
 
@@ -171,11 +172,58 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
   Future<void> _loadBingoPattern() async {
     final pattern = await firestoreService.getBingoPattern(widget.challengeId);
 
+    final name = await firestoreService.getBingoPatternName(widget.challengeId);
+
+    final hasSeen = await firestoreService.hasSeenBingoPattern(
+      widget.challengeId,
+    );
+
     if (!mounted) return;
 
     setState(() {
       targetShapeSquares = pattern;
+      patternName = name;
     });
+
+    if (!hasSeen) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+
+        _showPatternPopup();
+
+        await firestoreService.markBingoPatternSeen(widget.challengeId);
+      });
+    }
+  }
+
+  void _showPatternPopup() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(patternName),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Complete these highlighted tiles to win.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              _PatternPreview(targetShapeSquares: targetShapeSquares),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('Got it'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _loadSavedCompletedSquares() async {
@@ -304,13 +352,6 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
               'Pattern progress: $completedTargetSquares / $totalTargetSquares tiles',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 12),
-
-            Center(
-              child: _PatternPreview(targetShapeSquares: targetShapeSquares),
-            ),
-
-            const SizedBox(height: 20),
 
             Expanded(
               flex: 3,
@@ -669,10 +710,10 @@ class _PatternPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 90,
-      height: 90,
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+      width: 150,
+      height: 150,
+      padding: const EdgeInsets.all(20),
+      decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
       child: GridView.builder(
         physics: const NeverScrollableScrollPhysics(),
         itemCount: 25,

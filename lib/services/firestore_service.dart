@@ -320,7 +320,12 @@ class FirestoreService {
     final creatorName = creatorDoc.data()?['publicName'] ?? 'You';
 
     final random = Random();
-    final selectedPattern = bingoPatterns[random.nextInt(bingoPatterns.length)];
+
+    final selectedPatternIndex = random.nextInt(bingoPatterns.length);
+
+    final selectedPattern = bingoPatterns[selectedPatternIndex];
+
+    final selectedPatternName = bingoPatternNames[selectedPatternIndex];
 
     await _db.collection('challenges').add({
       'title': title,
@@ -334,6 +339,8 @@ class FirestoreService {
       'declinedPlayers': [],
       'createdAt': FieldValue.serverTimestamp(),
       'targetShapeSquares': selectedPattern.toList(),
+      'targetShapeName': selectedPatternName,
+      'patternSeenBy': [],
       'stepGoal': stepGoal,
       'distanceGoal': distanceGoal,
     });
@@ -505,6 +512,36 @@ class FirestoreService {
     return (board as List).map((tile) {
       return Map<String, dynamic>.from(tile as Map);
     }).toList();
+  }
+
+  Future<String> getBingoPatternName(String challengeId) async {
+    final doc = await _db.collection('challenges').doc(challengeId).get();
+    final data = doc.data();
+
+    return data?['targetShapeName'] ?? 'Bingo Pattern';
+  }
+
+  Future<bool> hasSeenBingoPattern(String challengeId) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) return true;
+
+    final doc = await _db.collection('challenges').doc(challengeId).get();
+    final data = doc.data();
+
+    final seenBy = List<String>.from(data?['patternSeenBy'] ?? []);
+
+    return seenBy.contains(currentUser.uid);
+  }
+
+  Future<void> markBingoPatternSeen(String challengeId) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null) return;
+
+    await _db.collection('challenges').doc(challengeId).update({
+      'patternSeenBy': FieldValue.arrayUnion([currentUser.uid]),
+    });
   }
 
   Future<Set<int>> getBingoPattern(String challengeId) async {
