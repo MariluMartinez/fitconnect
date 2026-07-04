@@ -25,6 +25,7 @@ class _MeetupsScreenState extends State<MeetupsScreen> {
   final _searchAreaController = TextEditingController();
 
   final GooglePlacesService _googlePlacesService = GooglePlacesService();
+  final ValueNotifier<bool> _showClearSearch = ValueNotifier<bool>(false);
 
   String _selectedType = 'All';
   int _selectedRadius = 25;
@@ -36,6 +37,7 @@ class _MeetupsScreenState extends State<MeetupsScreen> {
   @override
   void dispose() {
     _searchAreaController.dispose();
+    _showClearSearch.dispose();
     super.dispose();
   }
 
@@ -156,25 +158,40 @@ class _MeetupsScreenState extends State<MeetupsScreen> {
                   children: [
                     TextField(
                       controller: _searchAreaController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Search Area',
                         hintText: 'City, State',
-                        prefixIcon: Icon(Icons.search),
-                        border: OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: ValueListenableBuilder<bool>(
+                          valueListenable: _showClearSearch,
+                          builder: (context, showClear, child) {
+                            if (!showClear) return const SizedBox.shrink();
+
+                            return IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchAreaController.clear();
+                                _showClearSearch.value = false;
+
+                                setState(() {
+                                  _searchLatitude = null;
+                                  _searchLongitude = null;
+                                });
+                              },
+                            );
+                          },
+                        ),
+                        border: const OutlineInputBorder(),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    OutlinedButton.icon(
-                      onPressed: () async {
-                        final value = _searchAreaController.text.trim();
-
-                        if (value.isEmpty) return;
+                      onChanged: (value) {
+                        _showClearSearch.value = value.isNotEmpty;
+                      },
+                      onSubmitted: (value) async {
+                        if (value.trim().isEmpty) return;
 
                         final results = await _googlePlacesService.searchPlaces(
                           value,
                         );
-
                         if (!mounted || results.isEmpty) return;
 
                         final placeId = results.first.placeId;
@@ -182,7 +199,6 @@ class _MeetupsScreenState extends State<MeetupsScreen> {
 
                         final details = await _googlePlacesService
                             .getPlaceDetails(placeId);
-
                         if (!mounted || details == null) return;
 
                         setState(() {
@@ -190,11 +206,8 @@ class _MeetupsScreenState extends State<MeetupsScreen> {
                           _searchLongitude = details.longitude;
                         });
                       },
-                      icon: const Icon(Icons.search),
-                      label: const Text('Apply Area Filter'),
                     ),
-
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
 
                     Row(
                       children: [
