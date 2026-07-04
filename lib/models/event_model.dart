@@ -8,6 +8,7 @@ class Event {
   final double longitude;
   final String eventType;
   final String difficulty; 
+  final String description; 
   final DateTime dateTime;
   final String createdBy;
   final List<String> participants;
@@ -22,6 +23,7 @@ class Event {
     required this.longitude,
     required this.eventType,
     required this.difficulty,
+    required this.description,
     required this.dateTime,
     required this.createdBy,
     required this.participants,
@@ -38,6 +40,7 @@ class Event {
       longitude: (data['longitude'] ?? 0).toDouble(),
       eventType: data['eventType'] ?? 'General',
       difficulty: data['difficulty'] ??  'Any Level', 
+      description: data['description'] ?? '',
       dateTime: DateTime.parse(data['dateTime']),
       createdBy: data['createdBy'] ?? '',
       participants: List<String>.from(data['participants'] ?? []),
@@ -54,6 +57,7 @@ class Event {
       'longitude': longitude,
       'eventType': eventType,
       'difficulty': difficulty,
+      'description': description,
       'dateTime': dateTime.toIso8601String(),
       'createdBy': createdBy,
       'participants': participants,

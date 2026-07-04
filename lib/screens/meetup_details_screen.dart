@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../utils/difficulty_utils.dart';
 import '../models/event_model.dart';
+import '../services/event_service.dart';
+import '../services/notifications_service.dart';
+import 'create_meetup_screen.dart';
 
 class MeetupDetailsScreen extends StatelessWidget {
   final Event event;
@@ -19,6 +23,9 @@ class MeetupDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final isCreator = currentUser?.uid == event.createdBy;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Meetup Details')),
       body: ListView(
@@ -52,12 +59,79 @@ class MeetupDetailsScreen extends StatelessWidget {
             leading: const Icon(Icons.people),
             title: Text("${event.participants.length} participant(s)"),
           ),
+          if (event.description.trim().isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'Description',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(event.description),
+          ],
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: _openDirections,
             icon: const Icon(Icons.directions),
             label: const Text("Directions"),
           ),
+          if (isCreator) ...[
+            const SizedBox(height: 16),
+
+            OutlinedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        CreateMeetupScreen(existingEvent: event),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.edit),
+              label: const Text('Edit Meetup'),
+            ),
+
+            const SizedBox(height: 8),
+
+            FilledButton.icon(
+              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Delete Meetup?'),
+                    content: const Text('This cannot be undone.'),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context, false);
+                        },
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context, true);
+                        },
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirm != true) return;
+
+                await EventService().deleteEvent(event.id);
+
+                await NotificationService.cancelReminder(event.id.hashCode);
+
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
+              },
+              icon: const Icon(Icons.delete),
+              label: const Text('Delete Meetup'),
+            ),
+          ],
         ],
       ),
     );

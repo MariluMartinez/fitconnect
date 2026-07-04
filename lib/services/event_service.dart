@@ -29,4 +29,12 @@ class EventService {
       'participants': FieldValue.arrayRemove([userId]),
     });
   }
+
+  Future<void> updateEvent(Event event) async {
+    await _eventsCollection.doc(event.id).update(event.toMap());
+  }
+
+  Future<void> deleteEvent(String eventId) async {
+    await _eventsCollection.doc(eventId).delete();
+  }
 }

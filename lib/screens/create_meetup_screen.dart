@@ -4,9 +4,12 @@ import 'package:flutter_google_places_sdk/flutter_google_places_sdk.dart';
 import '../models/event_model.dart';
 import '../services/event_service.dart';
 import '../services/google_places_service.dart';
+import '../services/notifications_service.dart';
 
 class CreateMeetupScreen extends StatefulWidget {
-  const CreateMeetupScreen({super.key});
+  final Event? existingEvent;
+
+  const CreateMeetupScreen({super.key, this.existingEvent});
 
   @override
   State<CreateMeetupScreen> createState() => _CreateMeetupScreenState();
@@ -17,6 +20,7 @@ class _CreateMeetupScreenState extends State<CreateMeetupScreen> {
   final _locationController = TextEditingController();
   final _cityController = TextEditingController();
   final _stateController = TextEditingController();
+  final _descriptionController = TextEditingController();
   final EventService _eventService = EventService();
   final GooglePlacesService _placesService = GooglePlacesService();
 
@@ -31,6 +35,26 @@ class _CreateMeetupScreenState extends State<CreateMeetupScreen> {
   DateTime? _selectedDateTime;
 
   List<AutocompletePrediction> _predictions = [];
+
+  @override
+  void initState() {
+    super.initState();
+
+    final event = widget.existingEvent;
+
+    if (event != null) {
+      _titleController.text = event.title;
+      _locationController.text = event.location;
+      _cityController.text = event.city;
+      _stateController.text = event.state;
+      _descriptionController.text = event.description;
+      _selectedEventType = event.eventType;
+      _selectedDifficulty = event.difficulty;
+      _selectedDateTime = event.dateTime;
+      _selectedLatitude = event.latitude;
+      _selectedLongitude = event.longitude;
+    }
+  }
 
   Future<void> _pickDateTime() async {
     final date = await showDatePicker(
@@ -78,13 +102,14 @@ class _CreateMeetupScreenState extends State<CreateMeetupScreen> {
     });
 
     final event = Event(
-      id: '',
+      id: widget.existingEvent?.id ?? '',
       title: _titleController.text.trim(),
       location: _locationController.text.trim(),
       city: _cityController.text.trim(),
       state: _stateController.text.trim().toUpperCase(),
       eventType: _selectedEventType,
       difficulty: _selectedDifficulty,
+      description: _descriptionController.text.trim(),
       dateTime: _selectedDateTime!,
       createdBy: user.uid,
       participants: [user.uid],
@@ -92,7 +117,20 @@ class _CreateMeetupScreenState extends State<CreateMeetupScreen> {
       longitude: _selectedLongitude,
     );
 
-    await _eventService.createEvent(event);
+    if (widget.existingEvent == null) {
+      await _eventService.createEvent(event);
+    } else {
+      await _eventService.updateEvent(event);
+    }
+
+    try {
+      NotificationService.showReminderAfterDelay(
+        title: event.title,
+        location: event.location,
+      );
+    } catch (e) {
+      debugPrint('Reminder scheduling failed: $e');
+    }
 
     if (mounted) {
       Navigator.pop(context);
@@ -105,14 +143,19 @@ class _CreateMeetupScreenState extends State<CreateMeetupScreen> {
     _locationController.dispose();
     _cityController.dispose();
     _stateController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Meetup')),
-      body: Padding(
+      appBar: AppBar(
+        title: Text(
+          widget.existingEvent == null ? 'Create Meetup' : 'Edit Meetup',
+        ),
+      ),
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
@@ -264,7 +307,20 @@ class _CreateMeetupScreenState extends State<CreateMeetupScreen> {
                 });
               },
             ),
-            
+
+            const SizedBox(height: 16),
+
+            TextField(
+              controller: _descriptionController,
+              maxLines: 4,
+              maxLength: 300,
+              decoration: const InputDecoration(
+                labelText: 'Description',
+                hintText: 'Example: Meet near the entrance. Bring water!',
+                border: OutlineInputBorder(),
+              ),
+            ),
+
             const SizedBox(height: 16),
 
             OutlinedButton.icon(
@@ -279,7 +335,13 @@ class _CreateMeetupScreenState extends State<CreateMeetupScreen> {
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _isSaving ? null : _saveMeetup,
-              child: Text(_isSaving ? 'Saving...' : 'Create Meetup'),
+              child: Text(
+                _isSaving
+                    ? 'Saving...'
+                    : widget.existingEvent == null
+                    ? 'Create Meetup'
+                    : 'Save Changes',
+              ),
             ),
           ],
         ),

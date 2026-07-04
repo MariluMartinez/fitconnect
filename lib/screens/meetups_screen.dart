@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/event_model.dart';
 import '../services/event_service.dart';
+import '../services/notifications_service.dart';
 import '../utils/difficulty_utils.dart';
 import 'create_meetup_screen.dart';
 import 'meetup_details_screen.dart';
+import 'my_meetups_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
@@ -46,7 +48,23 @@ class _MeetupsScreenState extends State<MeetupsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Local Meetups')),
+      appBar: AppBar(
+        title: const Text('Local Meetups'),
+        actions: [
+          IconButton(
+            tooltip: 'My Meetups',
+            icon: const Icon(Icons.event_note_outlined),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MyMeetupsScreen(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       body: StreamBuilder<List<Event>>(
         stream: _eventService.getEvents(),
         builder: (context, snapshot) {
@@ -354,10 +372,19 @@ class _MeetupsScreenState extends State<MeetupsScreen> {
                                                 event.id,
                                                 user.uid,
                                               );
+
+                                              await NotificationService.cancelReminder(
+                                                event.hashCode,
+                                              );
                                             } else {
                                               await _eventService.joinEvent(
                                                 event.id,
                                                 user.uid,
+                                              );
+
+                                              await NotificationService.showReminderAfterDelay(
+                                                title: event.title,
+                                                location: event.location,
                                               );
                                             }
                                           },
