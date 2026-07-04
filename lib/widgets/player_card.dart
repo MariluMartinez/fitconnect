@@ -93,7 +93,7 @@ class PlayerCard extends StatelessWidget {
                         color: isCompleted
                             ? Colors.green
                             : isTarget
-                            ? Colors.white
+                            ? Colors.amber
                             : Colors.grey.shade300,
                       ),
                     );

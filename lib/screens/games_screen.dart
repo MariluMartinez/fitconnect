@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/health_service.dart';
-import 'invite_friends_screen.dart';
 import 'bingo_game_screen.dart';
 import 'step_race_screen.dart';
 import 'distance_race_screen.dart';
@@ -508,16 +507,7 @@ class _GamesScreenState extends State<GamesScreen> {
                 icon: Icons.grid_view,
                 onTap: () {
                   Navigator.pop(sheetContext);
-
-                  Navigator.push(
-                    parentContext,
-                    MaterialPageRoute(
-                      builder: (_) => InviteFriendsScreen(
-                        challengeName: 'Bingo',
-                        snapshot: widget.snapshot,
-                      ),
-                    ),
-                  );
+                  _createQuickChallenge(parentContext, 'bingo');
                 },
               ),
 
