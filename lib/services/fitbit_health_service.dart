@@ -77,6 +77,7 @@ class FitbitHealthService implements HealthService {
 
       final summary = activity['summary'];
       final steps = summary['steps'] ?? 0;
+      final activeMinutes = summary['fairlyActiveMinutes'] ?? 0;
 
       final distances = summary['distances'] as List;
       final totalDistance = distances.firstWhere(
@@ -90,11 +91,13 @@ class FitbitHealthService implements HealthService {
 
       debugPrint('Real Fitbit steps: $steps');
       debugPrint('Real Fitbit distance: $totalDistance');
+      debugPrint('Real Fitbit active minutes: $activeMinutes');
       debugPrint('Refresh token received: ${refreshToken != null}');
 
       return HealthSnapshot(
         steps: steps,
         distanceMiles: totalDistance.toDouble(),
+        activeMinutes: activeMinutes,
         source: 'Fitbit',
         lastSync: 'Just now',
       );
@@ -132,6 +135,7 @@ class FitbitHealthService implements HealthService {
 
       final summary = activity['summary'];
       final steps = summary['steps'] ?? 0;
+      final activeMinutes = summary['fairlyActiveMinutes'] ?? 0;
 
       final distances = summary['distances'] as List;
       final totalDistance = distances.firstWhere(
@@ -142,6 +146,7 @@ class FitbitHealthService implements HealthService {
       return HealthSnapshot(
         steps: steps,
         distanceMiles: totalDistance.toDouble(),
+        activeMinutes: activeMinutes,
         source: 'Fitbit',
         lastSync: 'Just now',
       );

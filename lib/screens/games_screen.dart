@@ -195,26 +195,6 @@ class _GamesScreenState extends State<GamesScreen> {
                       );
                     },
                   ),
-
-                  _GoalCard(
-                    title: 'Workout',
-                    value: '0',
-                    goal: '1',
-                    unit: 'done',
-                    progress: 0.0,
-                    icon: Icons.fitness_center,
-                    onTap: () {
-                      _showGoalDetailsPopup(
-                        context,
-                        title: 'Workout',
-                        value: '0',
-                        goal: '1',
-                        unit: 'done',
-                        progress: 0.0,
-                        streakDays: 0,
-                      );
-                    },
-                  ),
                 ],
               ),
             ),

@@ -5,7 +5,6 @@ import '../services/health_service.dart';
 import '../models/bingo_goal.dart';
 import '../widgets/player_card.dart';
 import '../services/firestore_service.dart';
-import 'package:flutter/foundation.dart';
 
 class BingoGameScreen extends StatefulWidget {
   final List<String> invitedFriends;
@@ -310,9 +309,7 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
   Widget build(BuildContext context) {
     final totalSteps = widget.snapshot?.steps ?? 0;
     final totalDistance = widget.snapshot?.distanceMiles ?? 0.0;
-
-    // temp until we connect real Fitbit active zone minutes.
-    final totalActiveMinutes = 0;
+    final totalActiveMinutes = widget.snapshot?.activeMinutes ?? 0;
 
     final availableSteps = totalSteps - usedSteps;
     final availableDistance = totalDistance - usedDistance;
@@ -378,10 +375,6 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
                         availableActiveMinutes,
                         targetShapeSquares,
                       );
-                    },
-
-                    onLongPress: () {
-                      _debugCompleteTile(context, index, goal);
                     },
 
                     child: Container(
@@ -636,48 +629,6 @@ class _BingoGameScreenState extends State<BingoGameScreen> {
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
   }
-
-  Future<void> _debugCompleteTile(
-    BuildContext context,
-    int index,
-    BingoGoal goal,
-  ) async {
-    if (!kDebugMode) return;
-
-    if (isChallengeFinished) {
-      _showWinnerDialog(winnerName.isEmpty ? 'Someone' : winnerName);
-      return;
-    }
-
-    if (!targetShapeSquares.contains(index)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('This tile is not part of the required pattern.'),
-        ),
-      );
-      return;
-    }
-
-    if (completedSquares.contains(index)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This square is already completed.')),
-      );
-      return;
-    }
-
-    setState(() {
-      completedSquares.add(index);
-    });
-
-    await firestoreService.saveBingoCompletedSquares(
-      challengeId: widget.challengeId,
-      completedSquares: completedSquares.toList(),
-    );
-
-    await _loadPlayerProgress();
-
-    await _checkForPatternWin(context, goal.label);
-  }
 }
 
 IconData _getIcon(BingoGoalType type) {
@@ -713,7 +664,10 @@ class _PatternPreview extends StatelessWidget {
       width: 150,
       height: 150,
       padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+      ),
       child: GridView.builder(
         physics: const NeverScrollableScrollPhysics(),
         itemCount: 25,
