@@ -42,9 +42,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           : await fitbitHealthService.connect();
 
       if (snapshot != null && mounted) {
+        await firestoreService.setFitbitConnected(true);
+
         await firestoreService.updateTodayActivity(
           steps: snapshot.steps,
           distanceMiles: snapshot.distanceMiles,
+          activeMinutes: snapshot.activeMinutes,
         );
 
         setState(() {
@@ -86,6 +89,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       distanceGoal = (profile['distanceGoal'] ?? 3.0).toDouble();
       activeMinutesGoal = profile['activeMinutesGoal'] ?? 30;
       sleepGoal = profile['sleepGoal'] ?? 8;
+      _isConnected = profile['fitbitConnected'] ?? false;
     });
   }
 

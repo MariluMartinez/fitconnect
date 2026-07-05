@@ -77,8 +77,9 @@ class FitbitHealthService implements HealthService {
 
       final summary = activity['summary'];
       final steps = summary['steps'] ?? 0;
-      final activeMinutes = summary['fairlyActiveMinutes'] ?? 0;
-
+      final activeMinutes =
+          (summary['fairlyActiveMinutes'] ?? 0) +
+          (summary['veryActiveMinutes'] ?? 0);
       final distances = summary['distances'] as List;
       final totalDistance = distances.firstWhere(
         (item) => item['activity'] == 'total',
@@ -119,7 +120,9 @@ class FitbitHealthService implements HealthService {
     final uid = user.uid;
 
     try {
-      final request = await client.getUrl(Uri.parse('$baseUrl/fitbit-data?uid=$uid'));
+      final request = await client.getUrl(
+        Uri.parse('$baseUrl/fitbit-data?uid=$uid'),
+      );
 
       final response = await request.close();
       final responseBody = await response.transform(utf8.decoder).join();
@@ -135,8 +138,9 @@ class FitbitHealthService implements HealthService {
 
       final summary = activity['summary'];
       final steps = summary['steps'] ?? 0;
-      final activeMinutes = summary['fairlyActiveMinutes'] ?? 0;
-
+      final activeMinutes =
+          (summary['fairlyActiveMinutes'] ?? 0) +
+          (summary['veryActiveMinutes'] ?? 0);
       final distances = summary['distances'] as List;
       final totalDistance = distances.firstWhere(
         (item) => item['activity'] == 'total',

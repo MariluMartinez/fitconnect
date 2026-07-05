@@ -103,7 +103,7 @@ class _GamesScreenState extends State<GamesScreen> {
   Widget build(BuildContext context) {
     final steps = widget.snapshot?.steps ?? 0;
     final distance = widget.snapshot?.distanceMiles ?? 0.0;
-    final activeMinutes = 0; // Later: connect real Fitbit active minutes.
+    final activeMinutes = widget.snapshot?.activeMinutes ?? 0;
 
     final stepsProgress = widget.stepsGoal == 0
         ? 0.0
@@ -177,7 +177,7 @@ class _GamesScreenState extends State<GamesScreen> {
                   ),
 
                   _GoalCard(
-                    title: 'Active Zone',
+                    title: 'Active Minutes',
                     value: activeMinutes.toString(),
                     goal: widget.activeMinutesGoal.toString(),
                     unit: 'min',
@@ -186,7 +186,7 @@ class _GamesScreenState extends State<GamesScreen> {
                     onTap: () {
                       _showGoalDetailsPopup(
                         context,
-                        title: 'Active Zone',
+                        title: 'Active Minutes',
                         value: activeMinutes.toString(),
                         goal: widget.activeMinutesGoal.toString(),
                         unit: 'min',

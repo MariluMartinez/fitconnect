@@ -20,10 +20,11 @@ class FirestoreService {
         'email': user.email,
         'publicName': user.displayName ?? user.email?.split('@')[0] ?? 'User',
         'photoUrl': user.photoURL,
-        'stepsGoal': 8000,
+        'stepsGoal': 10000,
         'distanceGoal': 3.0,
         'activeMinutesGoal': 30,
         'sleepGoal': 8,
+        'fitbitConnected': false,
         'friends': [],
         'createdAt': FieldValue.serverTimestamp(),
       });
@@ -177,6 +178,7 @@ class FirestoreService {
   Future<void> updateTodayActivity({
     required int steps,
     required double distanceMiles,
+    required int activeMinutes,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
 
@@ -185,6 +187,7 @@ class FirestoreService {
     await _db.collection('users').doc(user.uid).update({
       'todaySteps': steps,
       'todayDistanceMiles': distanceMiles,
+      'todayActiveMinutes': activeMinutes,
       'activityLastSync': FieldValue.serverTimestamp(),
     });
   }
@@ -689,5 +692,15 @@ class FirestoreService {
     }
 
     return players;
+  }
+
+  Future<void> setFitbitConnected(bool connected) async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) return;
+
+    await _db.collection('users').doc(user.uid).update({
+      'fitbitConnected': connected,
+    });
   }
 }
