@@ -132,7 +132,7 @@ class _GamesScreenState extends State<GamesScreen> {
             const SizedBox(height: 16),
 
             SizedBox(
-              height: 195,
+              height: 190,
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 children: [
@@ -177,7 +177,7 @@ class _GamesScreenState extends State<GamesScreen> {
                   ),
 
                   _GoalCard(
-                    title: 'Active Minutes',
+                    title: 'Active Mins',
                     value: activeMinutes.toString(),
                     goal: widget.activeMinutesGoal.toString(),
                     unit: 'min',
@@ -547,84 +547,86 @@ class _GamesScreenState extends State<GamesScreen> {
               title: const Text('Create Challenge'),
               content: SizedBox(
                 width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: titleController,
-                      decoration: const InputDecoration(
-                        labelText: 'Challenge name',
-                        hintText: 'Example: Weekend Bingo',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-
-                    if (type == 'step_race') ...[
-                      const SizedBox(height: 12),
-
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                       TextField(
-                        controller: stepGoalController,
-                        keyboardType: TextInputType.number,
+                        controller: titleController,
                         decoration: const InputDecoration(
-                          labelText: 'Step Goal',
-                          hintText: '10000',
+                          labelText: 'Challenge name',
+                          hintText: 'Example: Weekend Bingo',
                           border: OutlineInputBorder(),
                         ),
                       ),
 
-                      const SizedBox(height: 8),
+                      if (type == 'step_race') ...[
+                        const SizedBox(height: 12),
 
-                      const Text(
-                        'Step Race supports 2–4 total players. Invite 1–3 friends.',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                    ],
+                        TextField(
+                          controller: stepGoalController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Step Goal',
+                            hintText: '10000',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
 
-                    if (type == 'distance_race') ...[
+                        const SizedBox(height: 8),
+
+                        const Text(
+                          'Step Race supports 2–4 total players. Invite 1–3 friends.',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+
+                      if (type == 'distance_race') ...[
+                        const SizedBox(height: 12),
+
+                        TextField(
+                          controller: distanceGoalController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: const InputDecoration(
+                            labelText: 'Distance Goal (miles)',
+                            hintText: '5.0',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        const Text(
+                          'Distance Race supports 2–4 total players. Invite 1–3 friends.',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+
                       const SizedBox(height: 12),
 
-                      TextField(
-                        controller: distanceGoalController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        decoration: const InputDecoration(
-                          labelText: 'Distance Goal (miles)',
-                          hintText: '5.0',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
+                      ...friends.map((friend) {
+                        final uid = friend['uid'];
+                        final name = friend['publicName'] ?? 'User';
 
-                      const SizedBox(height: 8),
-
-                      const Text(
-                        'Distance Race supports 2–4 total players. Invite 1–3 friends.',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
+                        return CheckboxListTile(
+                          value: selectedFriends.contains(uid),
+                          title: Text(name),
+                          subtitle: Text(friend['email'] ?? ''),
+                          onChanged: (checked) {
+                            setDialogState(() {
+                              if (checked == true) {
+                                selectedFriends.add(uid);
+                              } else {
+                                selectedFriends.remove(uid);
+                              }
+                            });
+                          },
+                        );
+                      }),
                     ],
-
-                    const SizedBox(height: 12),
-
-                    ...friends.map((friend) {
-                      final uid = friend['uid'];
-                      final name = friend['publicName'] ?? 'User';
-
-                      return CheckboxListTile(
-                        value: selectedFriends.contains(uid),
-                        title: Text(name),
-                        subtitle: Text(friend['email'] ?? ''),
-                        onChanged: (checked) {
-                          setDialogState(() {
-                            if (checked == true) {
-                              selectedFriends.add(uid);
-                            } else {
-                              selectedFriends.remove(uid);
-                            }
-                          });
-                        },
-                      );
-                    }),
-                  ],
+                  ),
                 ),
               ),
               actions: [

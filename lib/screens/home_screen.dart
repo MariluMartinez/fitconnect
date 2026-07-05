@@ -67,20 +67,21 @@ class _HomeScreenState extends State<HomeScreen> {
         : (steps / widget.stepsGoal).clamp(0.0, 1.0);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('FitConnect'),
-        centerTitle: true,
-        actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.person_outline)),
-        ],
-      ),
+      appBar: AppBar(title: const Text('FitConnect'), centerTitle: true),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            Text(
-              'Welcome, $userName 👋',
-              style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Text(
+                'Hey, $userName 👋',
+                maxLines: 1,
+                style: const TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
             const SizedBox(height: 8),
             const Text(
@@ -173,39 +174,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
 
             const SizedBox(height: 20),
-
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x12000000),
-                    blurRadius: 16,
-                    offset: Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Current Challenge',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 10),
-                  Text('Walk 3 miles today', style: TextStyle(fontSize: 16)),
-                  SizedBox(height: 8),
-                  Text(
-                    'You are almost there — keep going!',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
 
             SizedBox(
               height: 52,
