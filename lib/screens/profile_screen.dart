@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'auth_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -23,6 +24,9 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  String publicName = 'User';
+  String email = '';
+
   late final TextEditingController stepsController;
   late final TextEditingController distanceController;
   late final TextEditingController activeMinutesController;
@@ -32,17 +36,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
 
-    stepsController = TextEditingController(text: widget.stepsGoal.toString());
+    _loadUserInfo();
 
+    stepsController = TextEditingController(text: widget.stepsGoal.toString());
     distanceController = TextEditingController(
       text: widget.distanceGoal.toStringAsFixed(1),
     );
-
     activeMinutesController = TextEditingController(
       text: widget.activeMinutesGoal.toString(),
     );
-
     sleepController = TextEditingController(text: widget.sleepGoal.toString());
+  }
+
+  Future<void> _loadUserInfo() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) return;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    if (!mounted) return;
+
+    setState(() {
+      publicName = doc.data()?['publicName'] ?? user.displayName ?? 'User';
+      email = user.email ?? doc.data()?['email'] ?? '';
+    });
   }
 
   @override
@@ -69,11 +90,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile & Goals')),
+      appBar: AppBar(title: const Text('Profile')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 32,
+                      backgroundColor: const Color(0xFF7C5CFA),
+                      child: Text(
+                        publicName.isNotEmpty
+                            ? publicName[0].toUpperCase()
+                            : '?',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 16),
+
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            publicName,
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+
+                          const SizedBox(height: 4),
+
+                          Text(
+                            email,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            const Text(
+              'Fitness Goals',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 12),
+
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: DropdownButtonFormField<int>(

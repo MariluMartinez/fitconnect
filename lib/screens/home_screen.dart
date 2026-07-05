@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/health_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -24,6 +26,31 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  String userName = 'there';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) return;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    if (!mounted) return;
+
+    setState(() {
+      userName = doc.data()?['publicName'] ?? user.displayName ?? 'there';
+    });
+  }
+
   String formatNumber(int value) {
     return value.toString().replaceAllMapped(
       RegExp(r'\B(?=(\d{3})+(?!\d))'),
@@ -51,9 +78,9 @@ class _HomeScreenState extends State<HomeScreen> {
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            const Text(
-              'Good afternoon, Marilu 👋',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+            Text(
+              'Welcome, $userName 👋',
+              style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             const Text(

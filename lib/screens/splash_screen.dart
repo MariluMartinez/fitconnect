@@ -56,7 +56,7 @@ void _checkAuth() async {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.favorite_rounded,
+                Icons.directions_run_rounded,
                 size: 90,
                 color: Colors.white,
               ),

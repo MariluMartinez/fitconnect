@@ -127,8 +127,6 @@ class _AuthScreenState extends State<AuthScreen> {
                           final firestoreService = FirestoreService();
                           await firestoreService.createUserIfNotExists();
 
-                          await FirestoreService().createUserIfNotExists();
-
                           if (mounted) {
                             Navigator.pushReplacement(
                               context,
