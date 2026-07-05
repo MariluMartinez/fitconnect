@@ -132,9 +132,9 @@ class MeetupDetailsScreen extends StatelessWidget {
 
                 if (confirm != true) return;
 
-                await EventService().deleteEvent(event.id);
-
                 await NotificationService.cancelReminder(event.id.hashCode);
+
+                await EventService().deleteEvent(event.id);
 
                 if (context.mounted) {
                   Navigator.pop(context);

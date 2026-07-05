@@ -6,8 +6,10 @@ class EventService {
 
   CollectionReference get _eventsCollection => _firestore.collection('events');
 
-  Future<void> createEvent(Event event) async {
-    await _eventsCollection.add(event.toMap());
+  Future<String> createEvent(Event event) async {
+    final doc = await _eventsCollection.add(event.toMap());
+
+    return doc.id;
   }
 
   Stream<List<Event>> getEvents() {

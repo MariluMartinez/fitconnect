@@ -463,7 +463,7 @@ class _MeetupsScreenState extends State<MeetupsScreen> {
                                               );
 
                                               await NotificationService.cancelReminder(
-                                                event.hashCode,
+                                                event.id.hashCode,
                                               );
                                             } else {
                                               await _eventService.joinEvent(
@@ -471,9 +471,11 @@ class _MeetupsScreenState extends State<MeetupsScreen> {
                                                 user.uid,
                                               );
 
-                                              await NotificationService.showReminderAfterDelay(
+                                              await NotificationService.scheduleMeetupReminder(
+                                                id: event.id.hashCode,
                                                 title: event.title,
                                                 location: event.location,
+                                                meetupTime: event.dateTime,
                                               );
                                             }
                                           },

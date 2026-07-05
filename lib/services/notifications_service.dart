@@ -27,7 +27,7 @@ class NotificationService {
     required String location,
     required DateTime meetupTime,
   }) async {
-    final reminderTime = meetupTime.subtract(const Duration(minutes: 2));
+    final reminderTime = meetupTime.subtract(const Duration(hours: 1));
 
     if (reminderTime.isBefore(DateTime.now())) return;
 
@@ -51,28 +51,6 @@ class NotificationService {
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
-    );
-  }
-
-  static Future<void> showReminderAfterDelay({
-    required String title,
-    required String location,
-  }) async {
-    await Future.delayed(const Duration(minutes: 2));
-
-    await _notifications.show(
-      999,
-      'FitConnect Reminder',
-      '$title starts soon at $location',
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'meetup_reminders',
-          'Meetup Reminders',
-          channelDescription: 'FitConnect meetup reminders',
-          importance: Importance.high,
-          priority: Priority.high,
-        ),
-      ),
     );
   }
 

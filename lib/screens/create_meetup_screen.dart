@@ -118,18 +118,16 @@ class _CreateMeetupScreenState extends State<CreateMeetupScreen> {
     );
 
     if (widget.existingEvent == null) {
-      await _eventService.createEvent(event);
-    } else {
-      await _eventService.updateEvent(event);
-    }
+      final eventId = await _eventService.createEvent(event);
 
-    try {
-      NotificationService.showReminderAfterDelay(
+      await NotificationService.scheduleMeetupReminder(
+        id: eventId.hashCode,
         title: event.title,
         location: event.location,
+        meetupTime: event.dateTime,
       );
-    } catch (e) {
-      debugPrint('Reminder scheduling failed: $e');
+    } else {
+      await _eventService.updateEvent(event);
     }
 
     if (mounted) {
