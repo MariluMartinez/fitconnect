@@ -10,12 +10,8 @@ class FitbitHealthService implements HealthService {
   static const String redirectUri = 'fitconnect://callback';
 
   String get baseUrl {
-    if (Platform.isAndroid) {
-      return 'http://10.0.2.2:3000';
-    } else {
-      return 'http://192.168.86.166:3000';
-    }
-  }
+  return 'https://fitconnect-server-8z8x.onrender.com';
+}
 
   @override
   Future<HealthSnapshot?> connect() async {
