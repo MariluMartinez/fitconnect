@@ -45,6 +45,12 @@ class FitbitHealthService implements HealthService {
       throw Exception('User not logged in.');
     }
 
+    final idToken = await user.getIdToken();
+
+    if (idToken == null) {
+      throw Exception('Could not get Firebase ID token.');
+    }
+
     final uid = user.uid;
     debugPrint('Current UID: $uid');
 
@@ -56,7 +62,10 @@ class FitbitHealthService implements HealthService {
       );
 
       request.headers.contentType = ContentType.json;
-      request.write(jsonEncode({'code': code, 'uid': uid}));
+
+      request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $idToken');
+
+      request.write(jsonEncode({'code': code}));
 
       final response = await request.close();
       final responseBody = await response.transform(utf8.decoder).join();
@@ -69,11 +78,7 @@ class FitbitHealthService implements HealthService {
 
       final data = jsonDecode(responseBody);
 
-      final tokens = data['tokens'];
       final activity = data['activity'];
-
-      final accessToken = tokens['access_token'];
-      final refreshToken = tokens['refresh_token'];
 
       final summary = activity['summary'];
       final steps = summary['steps'] ?? 0;
@@ -86,14 +91,9 @@ class FitbitHealthService implements HealthService {
         orElse: () => {'distance': 0},
       )['distance'];
 
-      if (accessToken == null) {
-        throw Exception('No access token returned from backend.');
-      }
-
       debugPrint('Real Fitbit steps: $steps');
       debugPrint('Real Fitbit distance: $totalDistance');
       debugPrint('Real Fitbit active minutes: $activeMinutes');
-      debugPrint('Refresh token received: ${refreshToken != null}');
 
       return HealthSnapshot(
         steps: steps,
@@ -117,12 +117,16 @@ class FitbitHealthService implements HealthService {
       throw Exception('User not logged in.');
     }
 
-    final uid = user.uid;
+    final idToken = await user.getIdToken();
+
+    if (idToken == null) {
+      throw Exception('Could not get Firebase ID token.');
+    }
 
     try {
-      final request = await client.getUrl(
-        Uri.parse('$baseUrl/fitbit-data?uid=$uid'),
-      );
+      final request = await client.getUrl(Uri.parse('$baseUrl/fitbit-data'));
+
+      request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $idToken');
 
       final response = await request.close();
       final responseBody = await response.transform(utf8.decoder).join();
@@ -138,10 +142,13 @@ class FitbitHealthService implements HealthService {
 
       final summary = activity['summary'];
       final steps = summary['steps'] ?? 0;
+
       final activeMinutes =
           (summary['fairlyActiveMinutes'] ?? 0) +
           (summary['veryActiveMinutes'] ?? 0);
+
       final distances = summary['distances'] as List;
+
       final totalDistance = distances.firstWhere(
         (item) => item['activity'] == 'total',
         orElse: () => {'distance': 0},
@@ -149,7 +156,7 @@ class FitbitHealthService implements HealthService {
 
       return HealthSnapshot(
         steps: steps,
-        distanceMiles: totalDistance.toDouble(),
+        distanceMiles: (totalDistance as num).toDouble(),
         activeMinutes: activeMinutes,
         source: 'Fitbit',
         lastSync: 'Just now',
